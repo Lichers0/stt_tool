@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0614ABE69F9F31C207AED536 /* TranscriptionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */; };
+		1680AE08EBCBECBE4A10D975 /* FloatingOverlayWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */; };
 		2CFA6935AB10D91C8295D29F /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDD5A1F62444BCFC4FCDDBC /* Constants.swift */; };
 		32A8BDC328045268BD2EBEBA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EB21136745D8C317847AD27 /* AppState.swift */; };
 		33F20E3466D983EEB0088012 /* PermissionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FE229AFF0CBAA802621F02A /* PermissionsService.swift */; };
@@ -36,6 +37,7 @@
 
 /* Begin PBXFileReference section */
 		125E5228FF052711228F7A35 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingOverlayWindow.swift; sourceTree = "<group>"; };
 		2B668F7B93D4B311BA616E11 /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
 		3E37DD900D7EA1525E213137 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		42E12BC707F3738C76C52CBE /* DeepgramRESTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepgramRESTService.swift; sourceTree = "<group>"; };
@@ -96,6 +98,7 @@
 		5D12DBD6BC5BDBCB33A089C9 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */,
 				EF5688C9FE9376B725ADB8C8 /* HistoryView.swift */,
 				F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */,
 				4B84AFDCD289EC5CA2A7306B /* PermissionsPromptView.swift */,
@@ -237,6 +240,7 @@
 				2CFA6935AB10D91C8295D29F /* Constants.swift in Sources */,
 				7BAC0C56CAC71BD36E41A4A0 /* DeepgramRESTService.swift in Sources */,
 				35629D45E6FC52EED9DC1D45 /* DeepgramService.swift in Sources */,
+				1680AE08EBCBECBE4A10D975 /* FloatingOverlayWindow.swift in Sources */,
 				B670F86EB5749DCD76311674 /* HistoryService.swift in Sources */,
 				3DA2E93CE1C079AD714656CD /* HistoryView.swift in Sources */,
 				3A8CBD3FB9DB61B88CE6A98A /* HistoryViewModel.swift in Sources */,
