@@ -59,6 +59,19 @@ final class FloatingOverlayWindow: NSPanel {
         overlayViewModel.timerSeconds = seconds
     }
 
+    func setVocabularyName(_ name: String) {
+        overlayViewModel.vocabularyName = name
+    }
+
+    func setPreviewedVocabularyName(_ name: String?, isPendingSwitch: Bool) {
+        overlayViewModel.previewedVocabularyName = name
+        overlayViewModel.isPendingSwitch = isPendingSwitch
+    }
+
+    func setReconnecting(_ reconnecting: Bool) {
+        overlayViewModel.isReconnecting = reconnecting
+    }
+
     func showFinalAndDismiss() {
         overlayViewModel.interimText = ""
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
@@ -153,6 +166,18 @@ final class OverlayViewModel: ObservableObject {
     @Published var interimText = ""
     @Published var isContinueMode = false
     @Published var timerSeconds = 0
+    @Published var vocabularyName = ""
+    @Published var previewedVocabularyName: String?
+    @Published var isPendingSwitch = false
+    @Published var isReconnecting = false
+
+    var displayedVocabularyName: String {
+        previewedVocabularyName ?? vocabularyName
+    }
+
+    var showReturnSymbol: Bool {
+        isPendingSwitch
+    }
 
     func appendFinalText(_ text: String) {
         if !finalText.isEmpty && !finalText.hasSuffix(" ") {
@@ -166,6 +191,10 @@ final class OverlayViewModel: ObservableObject {
         interimText = ""
         isContinueMode = false
         timerSeconds = 0
+        vocabularyName = ""
+        previewedVocabularyName = nil
+        isPendingSwitch = false
+        isReconnecting = false
     }
 
     var displayText: String {
@@ -183,11 +212,12 @@ final class OverlayViewModel: ObservableObject {
 
 struct OverlayContentView: View {
     @ObservedObject var viewModel: OverlayViewModel
+    @State private var blinkOpacity: Double = 1.0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Header: mode indicator + timer
-            HStack {
+            // Header: mode indicator + vocabulary name + return symbol + timer
+            HStack(spacing: 6) {
                 Text(viewModel.isContinueMode ? "a" : "A")
                     .font(.system(.caption, design: .monospaced, weight: .bold))
                     .foregroundStyle(viewModel.isContinueMode ? .orange : .blue)
@@ -197,6 +227,30 @@ struct OverlayContentView: View {
                         (viewModel.isContinueMode ? Color.orange : Color.blue).opacity(0.15)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 3))
+
+                if !viewModel.displayedVocabularyName.isEmpty {
+                    Text(viewModel.displayedVocabularyName)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.primary)
+                        .opacity(blinkOpacity)
+                        .onChange(of: viewModel.isReconnecting) { _, reconnecting in
+                            if reconnecting {
+                                withAnimation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true)) {
+                                    blinkOpacity = 0.2
+                                }
+                            } else {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    blinkOpacity = 1.0
+                                }
+                            }
+                        }
+                }
+
+                if viewModel.showReturnSymbol {
+                    Text("\u{23CE}")
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
 
                 Spacer()
 

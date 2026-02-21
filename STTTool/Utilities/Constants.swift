@@ -20,8 +20,15 @@ enum Constants {
 
     static let deepgramEngineKey = "deepgramEngine"         // "deepgram" | "whisperkit"
     static let deepgramModeKey = "deepgramMode"             // "streaming" | "rest"
-    static let vocabularyTermsKey = "vocabularyTerms"       // [String]
+    static let vocabularyTermsKey = "vocabularyTerms"       // [String] (legacy, migrated)
     static let modeToggleKeyCodeKey = "modeToggleKeyCode"   // UInt32 (default: Down Arrow = 125)
+
+    // MARK: - Vocabulary Manager
+
+    static let vocabulariesKey = "vocabularies"                       // Data (JSON [Vocabulary])
+    static let activeVocabularyIdKey = "activeVocabularyId"           // String (UUID)
+    static let vocabularyStartupModeKey = "vocabularyStartupMode"     // "last" | "specific"
+    static let defaultVocabularyIdKey = "defaultVocabularyId"         // String (UUID)
     static let webSocketTTLSeconds: TimeInterval = 300      // 5 min
 
     static let defaultEngine = "deepgram"

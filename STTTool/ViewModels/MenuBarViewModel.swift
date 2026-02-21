@@ -29,6 +29,11 @@ final class MenuBarViewModel: ObservableObject {
     private var recordingTimer: Timer?
     private var recordingSeconds = 0
 
+    // Vocabulary switching
+    private var previewedVocabularyId: UUID?
+    private var overlayKeyMonitor: Any?
+    private var overlayGlobalKeyMonitor: Any?
+
     // MARK: - Init
 
     init(services: ServiceContainer) {
@@ -192,10 +197,14 @@ final class MenuBarViewModel: ObservableObject {
 
     private func startDeepgramRecording(apiKey: String) {
         let mode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
-        let vocabulary = UserDefaults.standard.stringArray(forKey: Constants.vocabularyTermsKey) ?? []
+        let vocabulary = services.vocabularyService.activeVocabulary?.terms ?? []
 
         overlay.showForRecording()
+        overlay.setVocabularyName(services.vocabularyService.activeVocabulary?.name ?? "")
+        previewedVocabularyId = nil
+        overlay.setPreviewedVocabularyName(nil, isPendingSwitch: false)
         startRecordingTimer()
+        registerOverlayHotkeys()
 
         if mode == "streaming" {
             startDeepgramStreaming(apiKey: apiKey, vocabulary: vocabulary)
@@ -230,7 +239,7 @@ final class MenuBarViewModel: ObservableObject {
                 if !deepgram.isConnected {
                     try await deepgram.connect(apiKey: apiKey, vocabulary: vocabulary)
                 }
-                deepgram.startStreaming()
+                deepgram.startStreaming(preserveAccumulatedText: false)
 
                 try services.audioCaptureService.startStreaming { [weak deepgram] chunk in
                     deepgram?.sendAudioChunk(chunk)
@@ -268,6 +277,7 @@ final class MenuBarViewModel: ObservableObject {
 
     private func stopRecordingAndTranscribe() {
         stopRecordingTimer()
+        unregisterOverlayHotkeys()
         services.hotKeyService.unregisterModeToggle()
 
         if appState == .streamingRecording {
@@ -346,7 +356,7 @@ final class MenuBarViewModel: ObservableObject {
         let int16Data = samplesToInt16Data(samples)
 
         let apiKey = services.keychainService.loadAPIKey() ?? ""
-        let vocabulary = UserDefaults.standard.stringArray(forKey: Constants.vocabularyTermsKey) ?? []
+        let vocabulary = services.vocabularyService.activeVocabulary?.terms ?? []
 
         Task {
             do {
@@ -476,6 +486,129 @@ final class MenuBarViewModel: ObservableObject {
         // Cannot read value attribute -- trust the AX result.
         print("[TextInsertion] Cannot verify (no value attribute), trusting AX result")
         return true
+    }
+
+    // MARK: - Vocabulary Switching
+
+    private func registerOverlayHotkeys() {
+        // Global monitor captures key events when other apps are focused
+        // (the overlay is a nonActivatingPanel, so focus stays in the target app).
+        overlayGlobalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return }
+            guard self.appState == .streamingRecording else { return }
+
+            switch Int(event.keyCode) {
+            case 123: self.cycleVocabulary(forward: false)
+            case 124: self.cycleVocabulary(forward: true)
+            case 36:  self.confirmVocabularySwitch()
+            default:  break
+            }
+        }
+
+        // Local monitor captures events when the app itself is focused.
+        overlayKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+            guard self.appState == .streamingRecording else { return event }
+
+            switch Int(event.keyCode) {
+            case 123: self.cycleVocabulary(forward: false); return nil
+            case 124: self.cycleVocabulary(forward: true); return nil
+            case 36:  self.confirmVocabularySwitch(); return nil
+            default:  return event
+            }
+        }
+    }
+
+    private func unregisterOverlayHotkeys() {
+        if let monitor = overlayKeyMonitor {
+            NSEvent.removeMonitor(monitor)
+            overlayKeyMonitor = nil
+        }
+        if let monitor = overlayGlobalKeyMonitor {
+            NSEvent.removeMonitor(monitor)
+            overlayGlobalKeyMonitor = nil
+        }
+    }
+
+    private func cycleVocabulary(forward: Bool) {
+        let vocabService = services.vocabularyService
+        let currentId = previewedVocabularyId ?? vocabService.activeVocabularyId ?? vocabService.vocabularyBySortOrder().first?.id
+
+        guard let id = currentId else { return }
+
+        let next = forward
+            ? vocabService.nextVocabulary(after: id)
+            : vocabService.previousVocabulary(before: id)
+
+        guard let nextVocab = next else { return }
+
+        previewedVocabularyId = nextVocab.id
+        let isPending = nextVocab.id != vocabService.activeVocabularyId
+        overlay.setPreviewedVocabularyName(nextVocab.name, isPendingSwitch: isPending)
+    }
+
+    private func confirmVocabularySwitch() {
+        guard let previewedId = previewedVocabularyId,
+              previewedId != services.vocabularyService.activeVocabularyId else {
+            return
+        }
+
+        let vocabService = services.vocabularyService
+        guard let newVocab = vocabService.vocabularies.first(where: { $0.id == previewedId }) else { return }
+
+        let mode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
+        guard mode == "streaming" else { return }
+
+        guard let apiKey = services.keychainService.loadAPIKey() else { return }
+
+        overlay.setReconnecting(true)
+        overlay.setPreviewedVocabularyName(nil, isPendingSwitch: false)
+
+        // Step 1: Start buffering audio
+        services.audioCaptureService.startBuffering()
+
+        nonisolated(unsafe) let deepgram = services.deepgramService
+
+        Task {
+            // Step 2: Finalize current connection and wait for remaining segments
+            deepgram.sendFinalize()
+            try? await Task.sleep(for: .milliseconds(500))
+
+            // Step 3: Disconnect
+            deepgram.disconnect()
+
+            // Step 4: Connect with new vocabulary
+            do {
+                try await deepgram.connect(apiKey: apiKey, vocabulary: newVocab.terms)
+                deepgram.startStreaming(preserveAccumulatedText: true)
+
+                // Step 5: Flush buffered audio and resume direct sending
+                services.audioCaptureService.flushBuffer { [weak deepgram] chunk in
+                    deepgram?.sendAudioChunk(chunk)
+                }
+                services.audioCaptureService.replaceChunkCallback { [weak deepgram] chunk in
+                    deepgram?.sendAudioChunk(chunk)
+                }
+
+                // Update state
+                vocabService.setActiveVocabulary(previewedId)
+                previewedVocabularyId = nil
+                overlay.setVocabularyName(newVocab.name)
+                overlay.setReconnecting(false)
+            } catch {
+                // On failure: stop recording entirely and show error
+                services.audioCaptureService.flushBuffer { _ in }
+                overlay.setReconnecting(false)
+                appState = .error("Vocabulary switch failed: \(error.localizedDescription)")
+                overlay.dismissImmediately()
+                stopRecordingTimer()
+                unregisterOverlayHotkeys()
+                services.hotKeyService.unregisterModeToggle()
+                _ = services.audioCaptureService.stopStreamingAndGetSamples()
+                resetToIdleAfterDelay()
+                print("[VocabSwitch] Reconnection failed: \(error.localizedDescription)")
+            }
+        }
     }
 
     // MARK: - Recording Timer

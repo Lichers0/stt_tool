@@ -120,9 +120,12 @@ struct MenuBarPopoverView: View {
 
     private var bottomBar: some View {
         HStack {
-            Button("History") {
-                showingHistory = true
+            Button(action: { showingHistory = true }) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.title3)
             }
+            .buttonStyle(.plain)
+            .help("History")
             .popover(isPresented: $showingHistory) {
                 HistoryView(
                     viewModel: HistoryViewModel(
@@ -133,9 +136,23 @@ struct MenuBarPopoverView: View {
 
             Spacer()
 
-            Button("Settings") {
-                showingSettings = true
+            if viewModel.currentEngine == "deepgram" {
+                Button(action: { VocabularyManagerWindow.showShared() }) {
+                    Image(systemName: "character.book.closed")
+                        .font(.title3)
+                }
+                .buttonStyle(.plain)
+                .help("Vocabularies")
+
+                Spacer()
             }
+
+            Button(action: { showingSettings = true }) {
+                Image(systemName: "gearshape")
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
+            .help("Settings")
             .popover(isPresented: $showingSettings) {
                 SettingsView(
                     viewModel: SettingsViewModel(
@@ -149,11 +166,13 @@ struct MenuBarPopoverView: View {
 
             Spacer()
 
-            Button("Quit") {
-                NSApplication.shared.terminate(nil)
+            Button(action: { NSApplication.shared.terminate(nil) }) {
+                Image(systemName: "power")
+                    .font(.title3)
             }
+            .buttonStyle(.plain)
+            .help("Quit")
         }
-        .font(.caption)
     }
 
     private var stateColor: Color {

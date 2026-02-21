@@ -15,7 +15,6 @@ final class SettingsViewModel: ObservableObject {
     @Published var hasAPIKey: Bool
     @Published var apiKeyError: String?
     @Published var isValidatingKey = false
-    @Published var vocabularyTerms: [String]
     @Published var modeToggleKeyCode: UInt32
 
     let availableModels = Constants.availableModels
@@ -44,7 +43,6 @@ final class SettingsViewModel: ObservableObject {
         self.selectedEngine = UserDefaults.standard.string(forKey: Constants.deepgramEngineKey) ?? Constants.defaultEngine
         self.deepgramMode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
         self.hasAPIKey = services.keychainService.loadAPIKey() != nil
-        self.vocabularyTerms = UserDefaults.standard.stringArray(forKey: Constants.vocabularyTermsKey) ?? []
 
         let savedToggleCode = UInt32(UserDefaults.standard.integer(forKey: Constants.modeToggleKeyCodeKey))
         self.modeToggleKeyCode = savedToggleCode != 0 ? savedToggleCode : Constants.defaultModeToggleKeyCode
@@ -96,19 +94,6 @@ final class SettingsViewModel: ObservableObject {
     func setDeepgramMode(_ mode: String) {
         deepgramMode = mode
         UserDefaults.standard.set(mode, forKey: Constants.deepgramModeKey)
-    }
-
-    // MARK: - Vocabulary
-
-    func addVocabularyTerm(_ term: String) {
-        guard !term.isEmpty, !vocabularyTerms.contains(term) else { return }
-        vocabularyTerms.append(term)
-        UserDefaults.standard.set(vocabularyTerms, forKey: Constants.vocabularyTermsKey)
-    }
-
-    func removeVocabularyTerm(at offsets: IndexSet) {
-        vocabularyTerms.remove(atOffsets: offsets)
-        UserDefaults.standard.set(vocabularyTerms, forKey: Constants.vocabularyTermsKey)
     }
 
     // MARK: - Mode Toggle Key

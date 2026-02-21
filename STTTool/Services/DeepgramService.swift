@@ -80,18 +80,20 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
 
     // MARK: - Streaming
 
-    func startStreaming() {
+    func startStreaming(preserveAccumulatedText: Bool = false) {
         guard state == .ready || state == .idle else {
             print("[Deepgram] startStreaming skipped, state=\(state)")
             return
         }
-        print("[Deepgram] startStreaming")
+        print("[Deepgram] startStreaming (preserveText=\(preserveAccumulatedText))")
 
         stopTTLTimer()
         stopKeepAliveTimer()
 
         lock.lock()
-        accumulatedText = ""
+        if !preserveAccumulatedText {
+            accumulatedText = ""
+        }
         latestInterimText = ""
         lock.unlock()
 
@@ -106,6 +108,10 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
             print("[Deepgram] sendAudioChunk #\(chunkCount): \(data.count) bytes")
         }
         socket?.write(data: data)
+    }
+
+    func sendFinalize() {
+        socket?.write(string: "{\"type\":\"Finalize\"}")
     }
 
     func stopStreaming() async -> String {

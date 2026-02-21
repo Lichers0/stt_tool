@@ -34,6 +34,9 @@
 		F7BAC0CE803E350A2B8DE420 /* MenuBarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */; };
 		F92D3494B7A9F88984676C0E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E37DD900D7EA1525E213137 /* SettingsView.swift */; };
 		FF3C1F2D5D1B51015718BC56 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = D9225F84A279DC60013581F5 /* WhisperKit */; };
+		D3E4F5A6B7C8D9E0F1A2B3C4 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* Vocabulary.swift */; };
+		E4F5A6B7C8D9E0F1A2B3C4D5 /* VocabularyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* VocabularyService.swift */; };
+		F5A6B7C8D9E0F1A2B3C4D5E6 /* VocabularyManagerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B8C9D0E1F2A3B4 /* VocabularyManagerWindow.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,6 +67,9 @@
 		F83D87823A92D1F0DDCDC462 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
 		F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverView.swift; sourceTree = "<group>"; };
 		FE9AB947A95988BFFDEB3EB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* Vocabulary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vocabulary.swift; sourceTree = "<group>"; };
+		B2C3D4E5F6A7B8C9D0E1F2A3 /* VocabularyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyService.swift; sourceTree = "<group>"; };
+		C3D4E5F6A7B8C9D0E1F2A3B4 /* VocabularyManagerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyManagerWindow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +99,7 @@
 			children = (
 				5EB21136745D8C317847AD27 /* AppState.swift */,
 				4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* Vocabulary.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -105,6 +112,7 @@
 				F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */,
 				3E37DD900D7EA1525E213137 /* SettingsView.swift */,
 				CE0158FA87B86C6BCB7C6E1E /* StartupGuardianView.swift */,
+				C3D4E5F6A7B8C9D0E1F2A3B4 /* VocabularyManagerWindow.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -133,6 +141,7 @@
 				5257A5A21AA2F79A96D3DB36 /* TextInsertionService.swift */,
 				83F44457B8B5758B933549B6 /* TextProcessingPipeline.swift */,
 				9677696947EC8641FCF4526B /* TranscriptionService.swift */,
+				B2C3D4E5F6A7B8C9D0E1F2A3 /* VocabularyService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -263,6 +272,9 @@
 				6284189AFC0E408573F5501C /* TextProcessingPipeline.swift in Sources */,
 				0614ABE69F9F31C207AED536 /* TranscriptionRecord.swift in Sources */,
 				B21B9DC0B6F2FEAEC6DA84BB /* TranscriptionService.swift in Sources */,
+				D3E4F5A6B7C8D9E0F1A2B3C4 /* Vocabulary.swift in Sources */,
+				F5A6B7C8D9E0F1A2B3C4D5E6 /* VocabularyManagerWindow.swift in Sources */,
+				E4F5A6B7C8D9E0F1A2B3C4D5 /* VocabularyService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

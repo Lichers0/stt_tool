@@ -120,49 +120,21 @@ struct SettingsView: View {
 
     // MARK: - Vocabulary Section
 
-    @State private var newTerm = ""
-
     private var vocabularySection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Vocabulary")
                 .font(.subheadline)
                 .fontWeight(.medium)
 
-            ForEach(viewModel.vocabularyTerms, id: \.self) { term in
-                HStack {
-                    Text(term).font(.caption)
-                    Spacer()
-                    Button(action: {
-                        if let idx = viewModel.vocabularyTerms.firstIndex(of: term) {
-                            viewModel.removeVocabularyTerm(at: IndexSet(integer: idx))
-                        }
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                }
+            Button("Manage Vocabularies...") {
+                VocabularyManagerWindow.showShared()
             }
+            .font(.caption)
 
-            HStack {
-                TextField("Add term", text: $newTerm)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.caption)
-                    .onSubmit { addTerm() }
-                Button("Add") { addTerm() }
-                    .font(.caption).controlSize(.small)
-                    .disabled(newTerm.isEmpty)
-            }
-
-            Text("Up to 100 terms. Improves recognition of specific words.")
+            Text("Create themed vocabularies to improve recognition of specific terms.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
-    }
-
-    private func addTerm() {
-        viewModel.addVocabularyTerm(newTerm)
-        newTerm = ""
     }
 
     // MARK: - Model Section

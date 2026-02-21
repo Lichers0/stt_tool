@@ -8,6 +8,9 @@ protocol AudioCaptureServiceProtocol: AnyObject {
     func stopRecording() -> [Float]
     func startStreaming(onChunk: @escaping (Data) -> Void) throws
     func stopStreamingAndGetSamples() -> [Float]
+    func startBuffering()
+    func flushBuffer(to callback: (Data) -> Void)
+    func replaceChunkCallback(_ callback: @escaping (Data) -> Void)
 }
 
 protocol TranscriptionServiceProtocol: AnyObject, Sendable {
@@ -80,14 +83,38 @@ protocol DeepgramRESTServiceProtocol: AnyObject, Sendable {
     func transcribe(audioData: Data, apiKey: String, vocabulary: [String]) async throws -> String
 }
 
+@MainActor
+protocol VocabularyServiceProtocol: AnyObject {
+    var vocabularies: [Vocabulary] { get }
+    var activeVocabularyId: UUID? { get }
+    var activeVocabulary: Vocabulary? { get }
+    var startupMode: VocabularyStartupMode { get set }
+    var defaultVocabularyId: UUID? { get set }
+    func setActiveVocabulary(_ id: UUID)
+    @discardableResult func createVocabulary(name: String, terms: [String]) -> Vocabulary
+    func updateVocabulary(_ vocabulary: Vocabulary)
+    func deleteVocabulary(_ id: UUID)
+    func duplicateVocabulary(_ id: UUID)
+    func reorder(fromOffsets source: IndexSet, toOffset destination: Int)
+    func addTerm(_ term: String, to vocabularyId: UUID)
+    func removeTerm(_ term: String, from vocabularyId: UUID)
+    func removeTerms(at offsets: IndexSet, from vocabularyId: UUID)
+    func copyTerms(_ terms: [String], to targetId: UUID)
+    func moveTerms(_ terms: [String], from sourceId: UUID, to targetId: UUID)
+    func vocabularyBySortOrder() -> [Vocabulary]
+    func nextVocabulary(after currentId: UUID) -> Vocabulary?
+    func previousVocabulary(before currentId: UUID) -> Vocabulary?
+}
+
 protocol DeepgramServiceProtocol: AnyObject {
     var onInterimResult: ((String) -> Void)? { get set }
     var onFinalResult: ((String) -> Void)? { get set }
     var onError: ((Error) -> Void)? { get set }
     var isConnected: Bool { get }
     func connect(apiKey: String, vocabulary: [String]) async throws
-    func startStreaming()
+    func startStreaming(preserveAccumulatedText: Bool)
     func sendAudioChunk(_ data: Data)
+    func sendFinalize()
     func stopStreaming() async -> String
     func disconnect()
 }
@@ -107,6 +134,7 @@ final class ServiceContainer {
     let keychainService: KeychainServiceProtocol
     let deepgramService: DeepgramServiceProtocol
     let deepgramRESTService: DeepgramRESTServiceProtocol
+    let vocabularyService: VocabularyServiceProtocol
 
     init(
         audioCaptureService: AudioCaptureServiceProtocol? = nil,
@@ -119,7 +147,8 @@ final class ServiceContainer {
         textProcessingPipeline: TextProcessingPipelineProtocol? = nil,
         keychainService: KeychainServiceProtocol? = nil,
         deepgramService: DeepgramServiceProtocol? = nil,
-        deepgramRESTService: DeepgramRESTServiceProtocol? = nil
+        deepgramRESTService: DeepgramRESTServiceProtocol? = nil,
+        vocabularyService: VocabularyServiceProtocol? = nil
     ) {
         self.audioCaptureService = audioCaptureService ?? AudioCaptureService()
         self.transcriptionService = transcriptionService ?? TranscriptionService()
@@ -132,5 +161,7 @@ final class ServiceContainer {
         self.keychainService = keychainService ?? KeychainService()
         self.deepgramService = deepgramService ?? DeepgramService()
         self.deepgramRESTService = deepgramRESTService ?? DeepgramRESTService()
+        self.vocabularyService = vocabularyService ?? VocabularyService()
+        VocabularyServiceShared.instance = self.vocabularyService
     }
 }

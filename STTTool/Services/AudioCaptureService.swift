@@ -8,6 +8,9 @@ final class AudioCaptureService: AudioCaptureServiceProtocol {
     private let lock = NSLock()
     private var chunkCallback: ((Data) -> Void)?
     private var isStreamingMode = false
+    private var isBuffering = false
+    private var audioBuffer: [Data] = []
+    private let bufferLock = NSLock()
 
     private(set) var isRecording = false
 
@@ -126,10 +129,19 @@ final class AudioCaptureService: AudioCaptureServiceProtocol {
 
             let count = Int(convertedBuffer.frameLength)
 
-            // Send int16 chunk to callback for Deepgram
+            // Send int16 chunk to callback for Deepgram (or buffer it)
             if let int16Data = convertedBuffer.int16ChannelData {
                 let data = Data(bytes: int16Data[0], count: count * 2)
-                self.chunkCallback?(data)
+
+                self.bufferLock.lock()
+                if self.isBuffering {
+                    self.audioBuffer.append(data)
+                    self.bufferLock.unlock()
+                } else {
+                    let callback = self.chunkCallback
+                    self.bufferLock.unlock()
+                    callback?(data)
+                }
 
                 // Also accumulate float32 samples for fallback/duration tracking
                 var floats = [Float](repeating: 0, count: count)
@@ -153,7 +165,38 @@ final class AudioCaptureService: AudioCaptureServiceProtocol {
     func stopStreamingAndGetSamples() -> [Float] {
         chunkCallback = nil
         isStreamingMode = false
+        bufferLock.lock()
+        isBuffering = false
+        audioBuffer.removeAll()
+        bufferLock.unlock()
         return stopRecording()
+    }
+
+    // MARK: - Buffering
+
+    func startBuffering() {
+        bufferLock.lock()
+        isBuffering = true
+        audioBuffer.removeAll()
+        bufferLock.unlock()
+    }
+
+    func flushBuffer(to callback: (Data) -> Void) {
+        bufferLock.lock()
+        let buffered = audioBuffer
+        audioBuffer.removeAll()
+        isBuffering = false
+        bufferLock.unlock()
+
+        for chunk in buffered {
+            callback(chunk)
+        }
+    }
+
+    func replaceChunkCallback(_ callback: @escaping (Data) -> Void) {
+        bufferLock.lock()
+        chunkCallback = callback
+        bufferLock.unlock()
     }
 
     func stopRecording() -> [Float] {
