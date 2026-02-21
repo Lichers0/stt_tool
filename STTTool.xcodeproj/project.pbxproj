@@ -11,6 +11,7 @@
 		2CFA6935AB10D91C8295D29F /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDD5A1F62444BCFC4FCDDBC /* Constants.swift */; };
 		32A8BDC328045268BD2EBEBA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EB21136745D8C317847AD27 /* AppState.swift */; };
 		33F20E3466D983EEB0088012 /* PermissionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FE229AFF0CBAA802621F02A /* PermissionsService.swift */; };
+		35629D45E6FC52EED9DC1D45 /* DeepgramService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A31B4D12A7D3A1B8605B47F /* DeepgramService.swift */; };
 		3A8CBD3FB9DB61B88CE6A98A /* HistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F83D87823A92D1F0DDCDC462 /* HistoryViewModel.swift */; };
 		3D50A8B5CDB9A65F09D06C29 /* ServiceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD12A141ED9C300BB169F756 /* ServiceContainer.swift */; };
 		3DA2E93CE1C079AD714656CD /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5688C9FE9376B725ADB8C8 /* HistoryView.swift */; };
@@ -49,6 +50,7 @@
 		83F44457B8B5758B933549B6 /* TextProcessingPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProcessingPipeline.swift; sourceTree = "<group>"; };
 		893C43D963FF7204D9ACBDC7 /* STTTool.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = STTTool.entitlements; sourceTree = "<group>"; };
 		9677696947EC8641FCF4526B /* TranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionService.swift; sourceTree = "<group>"; };
+		9A31B4D12A7D3A1B8605B47F /* DeepgramService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepgramService.swift; sourceTree = "<group>"; };
 		AD12A141ED9C300BB169F756 /* ServiceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceContainer.swift; sourceTree = "<group>"; };
 		BFDD5A1F62444BCFC4FCDDBC /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		CCE138D681515D8DDC3094DA /* AudioCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureService.swift; sourceTree = "<group>"; };
@@ -113,6 +115,7 @@
 			isa = PBXGroup;
 			children = (
 				CCE138D681515D8DDC3094DA /* AudioCaptureService.swift */,
+				9A31B4D12A7D3A1B8605B47F /* DeepgramService.swift */,
 				F346D7F85E96FB7D09962F8A /* HistoryService.swift */,
 				529B226ED1584A9755D79518 /* HotKeyService.swift */,
 				125E5228FF052711228F7A35 /* KeychainService.swift */,
@@ -229,6 +232,7 @@
 				32A8BDC328045268BD2EBEBA /* AppState.swift in Sources */,
 				4B15C8E658F1FB5D81633E69 /* AudioCaptureService.swift in Sources */,
 				2CFA6935AB10D91C8295D29F /* Constants.swift in Sources */,
+				35629D45E6FC52EED9DC1D45 /* DeepgramService.swift in Sources */,
 				B670F86EB5749DCD76311674 /* HistoryService.swift in Sources */,
 				3DA2E93CE1C079AD714656CD /* HistoryView.swift in Sources */,
 				3A8CBD3FB9DB61B88CE6A98A /* HistoryViewModel.swift in Sources */,

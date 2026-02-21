@@ -60,6 +60,18 @@ protocol KeychainServiceProtocol: AnyObject {
     func deleteAPIKey() throws
 }
 
+protocol DeepgramServiceProtocol: AnyObject {
+    var onInterimResult: ((String) -> Void)? { get set }
+    var onFinalResult: ((String) -> Void)? { get set }
+    var onError: ((Error) -> Void)? { get set }
+    var isConnected: Bool { get }
+    func connect(apiKey: String, vocabulary: [String]) async throws
+    func startStreaming()
+    func sendAudioChunk(_ data: Data)
+    func stopStreaming() async -> String
+    func disconnect()
+}
+
 // MARK: - Service Container
 
 @MainActor
@@ -73,6 +85,7 @@ final class ServiceContainer {
     let permissionsService: PermissionsServiceProtocol
     let textProcessingPipeline: TextProcessingPipelineProtocol
     let keychainService: KeychainServiceProtocol
+    let deepgramService: DeepgramServiceProtocol
 
     init(
         audioCaptureService: AudioCaptureServiceProtocol? = nil,
@@ -83,7 +96,8 @@ final class ServiceContainer {
         modelManager: ModelManagerProtocol? = nil,
         permissionsService: PermissionsServiceProtocol? = nil,
         textProcessingPipeline: TextProcessingPipelineProtocol? = nil,
-        keychainService: KeychainServiceProtocol? = nil
+        keychainService: KeychainServiceProtocol? = nil,
+        deepgramService: DeepgramServiceProtocol? = nil
     ) {
         self.audioCaptureService = audioCaptureService ?? AudioCaptureService()
         self.transcriptionService = transcriptionService ?? TranscriptionService()
@@ -94,5 +108,6 @@ final class ServiceContainer {
         self.permissionsService = permissionsService ?? PermissionsService()
         self.textProcessingPipeline = textProcessingPipeline ?? TextProcessingPipeline()
         self.keychainService = keychainService ?? KeychainService()
+        self.deepgramService = deepgramService ?? DeepgramService()
     }
 }
