@@ -14,14 +14,155 @@ struct SettingsView: View {
             Text("Settings")
                 .font(.headline)
 
-            modelSection
+            engineSection
             Divider()
+            if viewModel.selectedEngine == "deepgram" {
+                vocabularySection
+                Divider()
+            }
+            if viewModel.selectedEngine == "whisperkit" {
+                modelSection
+                Divider()
+            }
             permissionsSection
             Divider()
             hotkeySection
         }
         .padding(16)
         .frame(width: 340)
+    }
+
+    // MARK: - Engine Section
+
+    private var engineSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Transcription Engine")
+                .font(.subheadline)
+                .fontWeight(.medium)
+
+            Picker("", selection: $viewModel.selectedEngine) {
+                Text("Deepgram (online)").tag("deepgram")
+                Text("WhisperKit (offline)").tag("whisperkit")
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: viewModel.selectedEngine) { _, newValue in
+                viewModel.setEngine(newValue)
+            }
+
+            if viewModel.selectedEngine == "deepgram" {
+                deepgramSettingsSection
+            }
+        }
+    }
+
+    private var deepgramSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("Mode:", selection: $viewModel.deepgramMode) {
+                Text("Streaming").tag("streaming")
+                Text("REST").tag("rest")
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: viewModel.deepgramMode) { _, newValue in
+                viewModel.setDeepgramMode(newValue)
+            }
+
+            apiKeySection
+        }
+    }
+
+    // MARK: - API Key Section
+
+    @State private var newAPIKey = ""
+    @State private var isEditingKey = false
+
+    private var apiKeySection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("API Key")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if viewModel.hasAPIKey && !isEditingKey {
+                HStack {
+                    Text("............")
+                        .font(.caption)
+                    Spacer()
+                    Button("Change") { isEditingKey = true }
+                        .font(.caption).controlSize(.small)
+                    Button("Delete") { viewModel.deleteAPIKey() }
+                        .font(.caption).controlSize(.small)
+                        .foregroundStyle(.red)
+                }
+            } else {
+                HStack {
+                    SecureField("Deepgram API Key", text: $newAPIKey)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.caption)
+                    Button(viewModel.isValidatingKey ? "..." : "Save") {
+                        Task {
+                            await viewModel.saveAPIKey(newAPIKey)
+                            newAPIKey = ""
+                            isEditingKey = false
+                        }
+                    }
+                    .font(.caption).controlSize(.small)
+                    .disabled(newAPIKey.isEmpty || viewModel.isValidatingKey)
+                    if isEditingKey {
+                        Button("Cancel") { isEditingKey = false; newAPIKey = "" }
+                            .font(.caption).controlSize(.small)
+                    }
+                }
+                if let error = viewModel.apiKeyError {
+                    Text(error).font(.caption2).foregroundStyle(.red)
+                }
+            }
+        }
+    }
+
+    // MARK: - Vocabulary Section
+
+    @State private var newTerm = ""
+
+    private var vocabularySection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Vocabulary")
+                .font(.subheadline)
+                .fontWeight(.medium)
+
+            ForEach(viewModel.vocabularyTerms, id: \.self) { term in
+                HStack {
+                    Text(term).font(.caption)
+                    Spacer()
+                    Button(action: {
+                        if let idx = viewModel.vocabularyTerms.firstIndex(of: term) {
+                            viewModel.removeVocabularyTerm(at: IndexSet(integer: idx))
+                        }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            HStack {
+                TextField("Add term", text: $newTerm)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.caption)
+                    .onSubmit { addTerm() }
+                Button("Add") { addTerm() }
+                    .font(.caption).controlSize(.small)
+                    .disabled(newTerm.isEmpty)
+            }
+
+            Text("Up to 100 terms. Improves recognition of specific words.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func addTerm() {
+        viewModel.addVocabularyTerm(newTerm)
+        newTerm = ""
     }
 
     // MARK: - Model Section
@@ -111,6 +252,17 @@ struct SettingsView: View {
                 .fontWeight(.medium)
 
             HotKeyRecorderView(viewModel: viewModel)
+
+            HStack {
+                Text("Mode Toggle:")
+                    .font(.caption)
+                Text(viewModel.modeToggleKeyDisplayString)
+                    .font(.caption)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(nsColor: .quaternarySystemFill))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
         }
     }
 }

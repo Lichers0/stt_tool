@@ -9,6 +9,15 @@ final class SettingsViewModel: ObservableObject {
     @Published var hotKeyKeyCode: UInt32
     @Published var hotKeyModifiers: UInt32
 
+    // Deepgram settings
+    @Published var selectedEngine: String
+    @Published var deepgramMode: String
+    @Published var hasAPIKey: Bool
+    @Published var apiKeyError: String?
+    @Published var isValidatingKey = false
+    @Published var vocabularyTerms: [String]
+    @Published var modeToggleKeyCode: UInt32
+
     let availableModels = Constants.availableModels
     let modelDescriptions = Constants.modelDescriptions
 
@@ -30,6 +39,15 @@ final class SettingsViewModel: ObservableObject {
             self.hotKeyKeyCode = UInt32(kVK_Space)
             self.hotKeyModifiers = UInt32(NSEvent.ModifierFlags([.command, .shift]).rawValue)
         }
+
+        // Deepgram
+        self.selectedEngine = UserDefaults.standard.string(forKey: Constants.deepgramEngineKey) ?? Constants.defaultEngine
+        self.deepgramMode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
+        self.hasAPIKey = services.keychainService.loadAPIKey() != nil
+        self.vocabularyTerms = UserDefaults.standard.stringArray(forKey: Constants.vocabularyTermsKey) ?? []
+
+        let savedToggleCode = UInt32(UserDefaults.standard.integer(forKey: Constants.modeToggleKeyCodeKey))
+        self.modeToggleKeyCode = savedToggleCode != 0 ? savedToggleCode : Constants.defaultModeToggleKeyCode
     }
 
     func selectModel(_ model: String) {
@@ -37,6 +55,70 @@ final class SettingsViewModel: ObservableObject {
         selectedModel = model
         services.modelManager.selectedModel = model
         onModelChange(model)
+    }
+
+    // MARK: - Deepgram API Key
+
+    func saveAPIKey(_ key: String) async {
+        isValidatingKey = true
+        apiKeyError = nil
+
+        var request = URLRequest(url: URL(string: "https://api.deepgram.com/v1/projects")!)
+        request.setValue("Token \(key)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, http.statusCode == 200 {
+                try services.keychainService.saveAPIKey(key)
+                hasAPIKey = true
+            } else {
+                apiKeyError = "Invalid API key"
+            }
+        } catch {
+            apiKeyError = error.localizedDescription
+        }
+
+        isValidatingKey = false
+    }
+
+    func deleteAPIKey() {
+        try? services.keychainService.deleteAPIKey()
+        hasAPIKey = false
+    }
+
+    // MARK: - Engine Selection
+
+    func setEngine(_ engine: String) {
+        selectedEngine = engine
+        UserDefaults.standard.set(engine, forKey: Constants.deepgramEngineKey)
+    }
+
+    func setDeepgramMode(_ mode: String) {
+        deepgramMode = mode
+        UserDefaults.standard.set(mode, forKey: Constants.deepgramModeKey)
+    }
+
+    // MARK: - Vocabulary
+
+    func addVocabularyTerm(_ term: String) {
+        guard !term.isEmpty, !vocabularyTerms.contains(term) else { return }
+        vocabularyTerms.append(term)
+        UserDefaults.standard.set(vocabularyTerms, forKey: Constants.vocabularyTermsKey)
+    }
+
+    func removeVocabularyTerm(at offsets: IndexSet) {
+        vocabularyTerms.remove(atOffsets: offsets)
+        UserDefaults.standard.set(vocabularyTerms, forKey: Constants.vocabularyTermsKey)
+    }
+
+    // MARK: - Mode Toggle Key
+
+    func saveModeToggleKey() {
+        UserDefaults.standard.set(Int(modeToggleKeyCode), forKey: Constants.modeToggleKeyCodeKey)
+    }
+
+    var modeToggleKeyDisplayString: String {
+        Self.keyDisplayName(for: modeToggleKeyCode)
     }
 
     // MARK: - Hotkey Management
