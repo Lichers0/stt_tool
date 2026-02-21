@@ -153,7 +153,7 @@ struct MenuBarPopoverView: View {
         switch viewModel.appState {
         case .idle:
             return .secondary
-        case .recording:
+        case .recording, .streamingRecording:
             return .red
         case .transcribing:
             return .orange

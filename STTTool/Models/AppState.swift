@@ -3,6 +3,7 @@ import Foundation
 enum AppState: Equatable {
     case idle
     case recording
+    case streamingRecording
     case transcribing
     case inserting
     case error(String)
@@ -13,6 +14,8 @@ enum AppState: Equatable {
             return "Ready"
         case .recording:
             return "Recording..."
+        case .streamingRecording:
+            return "Recording (streaming)..."
         case .transcribing:
             return "Transcribing..."
         case .inserting:
@@ -28,6 +31,8 @@ enum AppState: Equatable {
             return "mic"
         case .recording:
             return "mic.fill"
+        case .streamingRecording:
+            return "mic.fill"
         case .transcribing:
             return "text.bubble"
         case .inserting:
@@ -38,12 +43,12 @@ enum AppState: Equatable {
     }
 
     var isRecording: Bool {
-        self == .recording
+        self == .recording || self == .streamingRecording
     }
 
     var isBusy: Bool {
         switch self {
-        case .recording, .transcribing, .inserting:
+        case .recording, .streamingRecording, .transcribing, .inserting:
             return true
         default:
             return false
