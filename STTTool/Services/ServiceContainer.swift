@@ -60,6 +60,10 @@ protocol KeychainServiceProtocol: AnyObject {
     func deleteAPIKey() throws
 }
 
+protocol DeepgramRESTServiceProtocol: AnyObject, Sendable {
+    func transcribe(audioData: Data, apiKey: String, vocabulary: [String]) async throws -> String
+}
+
 protocol DeepgramServiceProtocol: AnyObject {
     var onInterimResult: ((String) -> Void)? { get set }
     var onFinalResult: ((String) -> Void)? { get set }
@@ -86,6 +90,7 @@ final class ServiceContainer {
     let textProcessingPipeline: TextProcessingPipelineProtocol
     let keychainService: KeychainServiceProtocol
     let deepgramService: DeepgramServiceProtocol
+    let deepgramRESTService: DeepgramRESTServiceProtocol
 
     init(
         audioCaptureService: AudioCaptureServiceProtocol? = nil,
@@ -97,7 +102,8 @@ final class ServiceContainer {
         permissionsService: PermissionsServiceProtocol? = nil,
         textProcessingPipeline: TextProcessingPipelineProtocol? = nil,
         keychainService: KeychainServiceProtocol? = nil,
-        deepgramService: DeepgramServiceProtocol? = nil
+        deepgramService: DeepgramServiceProtocol? = nil,
+        deepgramRESTService: DeepgramRESTServiceProtocol? = nil
     ) {
         self.audioCaptureService = audioCaptureService ?? AudioCaptureService()
         self.transcriptionService = transcriptionService ?? TranscriptionService()
@@ -109,5 +115,6 @@ final class ServiceContainer {
         self.textProcessingPipeline = textProcessingPipeline ?? TextProcessingPipeline()
         self.keychainService = keychainService ?? KeychainService()
         self.deepgramService = deepgramService ?? DeepgramService()
+        self.deepgramRESTService = deepgramRESTService ?? DeepgramRESTService()
     }
 }
