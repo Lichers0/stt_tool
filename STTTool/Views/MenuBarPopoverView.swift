@@ -33,7 +33,14 @@ struct MenuBarPopoverView: View {
 
     @ViewBuilder
     private var modelStatusBadge: some View {
-        if viewModel.isLoadingModel {
+        if viewModel.currentEngine == "deepgram" {
+            Text("Deepgram")
+                .font(.caption2)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.quaternary)
+                .clipShape(Capsule())
+        } else if viewModel.isLoadingModel {
             HStack(spacing: 4) {
                 ProgressView()
                     .controlSize(.mini)

@@ -6,6 +6,8 @@
     <true/>
     <key>NSMicrophoneUsageDescription</key>
     <string>STT Tool needs microphone access to record speech for transcription.</string>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>STT Tool needs Accessibility access to detect cursor position and insert transcribed text.</string>
     <key>CFBundleName</key>
     <string>STT Tool</string>
     <key>CFBundleDisplayName</key>

@@ -35,7 +35,13 @@ struct STTToolApp: App {
 
     private func initializeApp() {
         let vm = MenuBarViewModel(services: services)
-        vm.loadModelAtLaunch()
+
+        // Only preload WhisperKit model if it's the selected engine
+        let engine = UserDefaults.standard.string(forKey: Constants.deepgramEngineKey) ?? Constants.defaultEngine
+        if engine == "whisperkit" {
+            vm.loadModelAtLaunch()
+        }
+
         viewModel = vm
     }
 }
