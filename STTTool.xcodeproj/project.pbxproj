@@ -20,6 +20,7 @@
 		4B6BB6F07C5B0E28CCCE63B6 /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B668F7B93D4B311BA616E11 /* MenuBarViewModel.swift */; };
 		53227F32CB415049D373C128 /* PermissionsPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B84AFDCD289EC5CA2A7306B /* PermissionsPromptView.swift */; };
 		6284189AFC0E408573F5501C /* TextProcessingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F44457B8B5758B933549B6 /* TextProcessingPipeline.swift */; };
+		922DE89C30C00E4F91DBE130 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125E5228FF052711228F7A35 /* KeychainService.swift */; };
 		9B8BF8688611761FE20E3F01 /* HotKey in Frameworks */ = {isa = PBXBuildFile; productRef = 129A90D8FD8895EAB6900216 /* HotKey */; };
 		AE47929E3419EA8016B71EF3 /* TextInsertionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5257A5A21AA2F79A96D3DB36 /* TextInsertionService.swift */; };
 		B21B9DC0B6F2FEAEC6DA84BB /* TranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9677696947EC8641FCF4526B /* TranscriptionService.swift */; };
@@ -32,6 +33,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		125E5228FF052711228F7A35 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		2B668F7B93D4B311BA616E11 /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
 		3E37DD900D7EA1525E213137 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionRecord.swift; sourceTree = "<group>"; };
@@ -113,6 +115,7 @@
 				CCE138D681515D8DDC3094DA /* AudioCaptureService.swift */,
 				F346D7F85E96FB7D09962F8A /* HistoryService.swift */,
 				529B226ED1584A9755D79518 /* HotKeyService.swift */,
+				125E5228FF052711228F7A35 /* KeychainService.swift */,
 				7EB65FD7A0A5597B2C93BFD2 /* ModelManager.swift */,
 				6FE229AFF0CBAA802621F02A /* PermissionsService.swift */,
 				AD12A141ED9C300BB169F756 /* ServiceContainer.swift */,
@@ -230,6 +233,7 @@
 				3DA2E93CE1C079AD714656CD /* HistoryView.swift in Sources */,
 				3A8CBD3FB9DB61B88CE6A98A /* HistoryViewModel.swift in Sources */,
 				40EF01B97E755781061D8BCA /* HotKeyService.swift in Sources */,
+				922DE89C30C00E4F91DBE130 /* KeychainService.swift in Sources */,
 				F7BAC0CE803E350A2B8DE420 /* MenuBarPopoverView.swift in Sources */,
 				4B6BB6F07C5B0E28CCCE63B6 /* MenuBarViewModel.swift in Sources */,
 				4A05F9DE16D64CE9D0C68A09 /* ModelManager.swift in Sources */,

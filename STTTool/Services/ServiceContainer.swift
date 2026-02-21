@@ -54,6 +54,12 @@ protocol TextProcessingPipelineProtocol: AnyObject, Sendable {
     func process(_ text: String) async -> String
 }
 
+protocol KeychainServiceProtocol: AnyObject {
+    func saveAPIKey(_ key: String) throws
+    func loadAPIKey() -> String?
+    func deleteAPIKey() throws
+}
+
 // MARK: - Service Container
 
 @MainActor
@@ -66,6 +72,7 @@ final class ServiceContainer {
     let modelManager: ModelManagerProtocol
     let permissionsService: PermissionsServiceProtocol
     let textProcessingPipeline: TextProcessingPipelineProtocol
+    let keychainService: KeychainServiceProtocol
 
     init(
         audioCaptureService: AudioCaptureServiceProtocol? = nil,
@@ -75,7 +82,8 @@ final class ServiceContainer {
         historyService: HistoryServiceProtocol? = nil,
         modelManager: ModelManagerProtocol? = nil,
         permissionsService: PermissionsServiceProtocol? = nil,
-        textProcessingPipeline: TextProcessingPipelineProtocol? = nil
+        textProcessingPipeline: TextProcessingPipelineProtocol? = nil,
+        keychainService: KeychainServiceProtocol? = nil
     ) {
         self.audioCaptureService = audioCaptureService ?? AudioCaptureService()
         self.transcriptionService = transcriptionService ?? TranscriptionService()
@@ -85,5 +93,6 @@ final class ServiceContainer {
         self.modelManager = modelManager ?? ModelManager()
         self.permissionsService = permissionsService ?? PermissionsService()
         self.textProcessingPipeline = textProcessingPipeline ?? TextProcessingPipeline()
+        self.keychainService = keychainService ?? KeychainService()
     }
 }
