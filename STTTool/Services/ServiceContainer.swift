@@ -46,13 +46,24 @@ protocol ModelManagerProtocol: AnyObject {
     func recommendedModel() -> String
 }
 
+enum KeychainProbeStatus {
+    case notConfigured
+    case accessible
+    case denied
+}
+
 @MainActor
 protocol PermissionsServiceProtocol: AnyObject {
     var isMicrophoneGranted: Bool { get }
     var isAccessibilityGranted: Bool { get }
+    var keychainStatus: KeychainProbeStatus { get }
+    var allRequiredPermissionsGranted: Bool { get }
     func requestMicrophoneAccess() async -> Bool
     func openAccessibilitySettings()
     func checkPermissions()
+    func probeKeychainAccess(using keychain: KeychainServiceProtocol)
+    func startAccessibilityPolling()
+    func stopAccessibilityPolling()
 }
 
 protocol TextProcessingPipelineProtocol: AnyObject, Sendable {

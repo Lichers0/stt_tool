@@ -7,7 +7,6 @@ enum Constants {
     static let hotKeyKeyCodeKey = "hotKeyKeyCode"
     static let hotKeyModifiersKey = "hotKeyModifiers"
     static let historyKey = "transcriptionHistory"
-    static let hasCompletedOnboardingKey = "hasCompletedOnboarding"
 
     // MARK: - Defaults
 

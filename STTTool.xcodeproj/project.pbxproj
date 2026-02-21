@@ -18,10 +18,10 @@
 		3D50A8B5CDB9A65F09D06C29 /* ServiceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD12A141ED9C300BB169F756 /* ServiceContainer.swift */; };
 		3DA2E93CE1C079AD714656CD /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5688C9FE9376B725ADB8C8 /* HistoryView.swift */; };
 		40EF01B97E755781061D8BCA /* HotKeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 529B226ED1584A9755D79518 /* HotKeyService.swift */; };
+		411510C04C4970F007646A34 /* StartupGuardianView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0158FA87B86C6BCB7C6E1E /* StartupGuardianView.swift */; };
 		4A05F9DE16D64CE9D0C68A09 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB65FD7A0A5597B2C93BFD2 /* ModelManager.swift */; };
 		4B15C8E658F1FB5D81633E69 /* AudioCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE138D681515D8DDC3094DA /* AudioCaptureService.swift */; };
 		4B6BB6F07C5B0E28CCCE63B6 /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B668F7B93D4B311BA616E11 /* MenuBarViewModel.swift */; };
-		53227F32CB415049D373C128 /* PermissionsPromptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B84AFDCD289EC5CA2A7306B /* PermissionsPromptView.swift */; };
 		6284189AFC0E408573F5501C /* TextProcessingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F44457B8B5758B933549B6 /* TextProcessingPipeline.swift */; };
 		7BAC0C56CAC71BD36E41A4A0 /* DeepgramRESTService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E12BC707F3738C76C52CBE /* DeepgramRESTService.swift */; };
 		922DE89C30C00E4F91DBE130 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125E5228FF052711228F7A35 /* KeychainService.swift */; };
@@ -43,7 +43,6 @@
 		3E37DD900D7EA1525E213137 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		42E12BC707F3738C76C52CBE /* DeepgramRESTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepgramRESTService.swift; sourceTree = "<group>"; };
 		4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionRecord.swift; sourceTree = "<group>"; };
-		4B84AFDCD289EC5CA2A7306B /* PermissionsPromptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsPromptView.swift; sourceTree = "<group>"; };
 		5257A5A21AA2F79A96D3DB36 /* TextInsertionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInsertionService.swift; sourceTree = "<group>"; };
 		529B226ED1584A9755D79518 /* HotKeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyService.swift; sourceTree = "<group>"; };
 		5995ABF46F4440EC726AAA17 /* STTTool.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = STTTool.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -59,6 +58,7 @@
 		AD12A141ED9C300BB169F756 /* ServiceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceContainer.swift; sourceTree = "<group>"; };
 		BFDD5A1F62444BCFC4FCDDBC /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		CCE138D681515D8DDC3094DA /* AudioCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureService.swift; sourceTree = "<group>"; };
+		CE0158FA87B86C6BCB7C6E1E /* StartupGuardianView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupGuardianView.swift; sourceTree = "<group>"; };
 		EF5688C9FE9376B725ADB8C8 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		F346D7F85E96FB7D09962F8A /* HistoryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryService.swift; sourceTree = "<group>"; };
 		F83D87823A92D1F0DDCDC462 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
@@ -103,8 +103,8 @@
 				202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */,
 				EF5688C9FE9376B725ADB8C8 /* HistoryView.swift */,
 				F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */,
-				4B84AFDCD289EC5CA2A7306B /* PermissionsPromptView.swift */,
 				3E37DD900D7EA1525E213137 /* SettingsView.swift */,
+				CE0158FA87B86C6BCB7C6E1E /* StartupGuardianView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -253,12 +253,12 @@
 				F7BAC0CE803E350A2B8DE420 /* MenuBarPopoverView.swift in Sources */,
 				4B6BB6F07C5B0E28CCCE63B6 /* MenuBarViewModel.swift in Sources */,
 				4A05F9DE16D64CE9D0C68A09 /* ModelManager.swift in Sources */,
-				53227F32CB415049D373C128 /* PermissionsPromptView.swift in Sources */,
 				33F20E3466D983EEB0088012 /* PermissionsService.swift in Sources */,
 				C6FB2332A765B2EA58113749 /* STTToolApp.swift in Sources */,
 				3D50A8B5CDB9A65F09D06C29 /* ServiceContainer.swift in Sources */,
 				F92D3494B7A9F88984676C0E /* SettingsView.swift in Sources */,
 				F7A022AAA2B9899F98F13636 /* SettingsViewModel.swift in Sources */,
+				411510C04C4970F007646A34 /* StartupGuardianView.swift in Sources */,
 				AE47929E3419EA8016B71EF3 /* TextInsertionService.swift in Sources */,
 				6284189AFC0E408573F5501C /* TextProcessingPipeline.swift in Sources */,
 				0614ABE69F9F31C207AED536 /* TranscriptionRecord.swift in Sources */,

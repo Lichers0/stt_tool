@@ -33,10 +33,14 @@ final class MenuBarViewModel: ObservableObject {
 
     init(services: ServiceContainer) {
         self.services = services
-        setupHotKey()
     }
 
     // MARK: - Public
+
+    /// Call after all permissions are granted to register hotkey and prepare the app.
+    func activate() {
+        setupHotKey()
+    }
 
     func toggleRecording() {
         switch appState {
@@ -109,6 +113,14 @@ final class MenuBarViewModel: ObservableObject {
     // MARK: - Start Recording
 
     private func startRecording() {
+        guard services.permissionsService.isMicrophoneGranted,
+              services.permissionsService.isAccessibilityGranted else {
+            appState = .error("Permissions required. Restart the app.")
+            NSSound.basso?.play()
+            resetToIdleAfterDelay()
+            return
+        }
+
         previousApp = NSWorkspace.shared.frontmostApplication
         captureFocusedInputContext()
         isContinueMode = false
