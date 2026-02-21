@@ -6,6 +6,8 @@ protocol AudioCaptureServiceProtocol: AnyObject {
     var isRecording: Bool { get }
     func startRecording() throws
     func stopRecording() -> [Float]
+    func startStreaming(onChunk: @escaping (Data) -> Void) throws
+    func stopStreamingAndGetSamples() -> [Float]
 }
 
 protocol TranscriptionServiceProtocol: AnyObject, Sendable {
