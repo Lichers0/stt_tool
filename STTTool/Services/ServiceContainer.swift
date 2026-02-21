@@ -23,8 +23,11 @@ protocol TextInsertionServiceProtocol: AnyObject, Sendable {
 
 protocol HotKeyServiceProtocol: AnyObject {
     var onToggle: (() -> Void)? { get set }
+    var onModeToggle: (() -> Void)? { get set }
     func register()
     func unregister()
+    func registerModeToggle()
+    func unregisterModeToggle()
 }
 
 protocol HistoryServiceProtocol: AnyObject {

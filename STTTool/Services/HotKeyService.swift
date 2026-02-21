@@ -5,6 +5,8 @@ import HotKey
 final class HotKeyService: HotKeyServiceProtocol {
     private var hotKey: HotKey?
     var onToggle: (() -> Void)?
+    var onModeToggle: (() -> Void)?
+    private var modeToggleMonitor: Any?
 
     func register() {
         // Default: Cmd+Shift+Space
@@ -34,5 +36,25 @@ final class HotKeyService: HotKeyServiceProtocol {
 
     func unregister() {
         hotKey = nil
+    }
+
+    func registerModeToggle() {
+        let keyCode = UInt32(
+            UserDefaults.standard.integer(forKey: Constants.modeToggleKeyCodeKey)
+        )
+        let targetKeyCode = keyCode != 0 ? keyCode : Constants.defaultModeToggleKeyCode
+
+        modeToggleMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if UInt32(event.keyCode) == targetKeyCode {
+                self?.onModeToggle?()
+            }
+        }
+    }
+
+    func unregisterModeToggle() {
+        if let monitor = modeToggleMonitor {
+            NSEvent.removeMonitor(monitor)
+            modeToggleMonitor = nil
+        }
     }
 }
