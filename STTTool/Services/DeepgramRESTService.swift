@@ -12,7 +12,7 @@ final class DeepgramRESTService: DeepgramRESTServiceProtocol, @unchecked Sendabl
         ]
 
         for term in vocabulary.prefix(100) {
-            queryItems.append(URLQueryItem(name: "keywords", value: "\(term):1.5"))
+            queryItems.append(URLQueryItem(name: "keyterm", value: term))
         }
 
         components.queryItems = queryItems

@@ -1,25 +1,50 @@
 import AppKit
+import ApplicationServices
 import Carbon.HIToolbox
 import Foundation
+
+enum TextInsertionError: LocalizedError {
+    case accessibilityNotGranted
+    case eventCreationFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .accessibilityNotGranted:
+            return "Accessibility access required. Grant it in System Settings > Privacy & Security > Accessibility."
+        case .eventCreationFailed:
+            return "Failed to create keyboard event for paste simulation."
+        }
+    }
+}
 
 final class TextInsertionService: TextInsertionServiceProtocol, @unchecked Sendable {
 
     func insertText(_ text: String) async throws {
+        // Accessibility is required for CGEvent.post to deliver events
+        guard AXIsProcessTrusted() else {
+            print("[PasteFallback] AXIsProcessTrusted = false!")
+            throw TextInsertionError.accessibilityNotGranted
+        }
+
         // Save current clipboard contents
         let pasteboard = NSPasteboard.general
         let previousContents = savePasteboard(pasteboard)
+        print("[PasteFallback] Saved clipboard (\(previousContents.count) types)")
 
         // Put transcription text into clipboard
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
+        print("[PasteFallback] Text placed on clipboard, length=\(text.count)")
 
-        // Small delay to let the target app become active
+        // Small delay to let the pasteboard sync
         try await Task.sleep(for: .milliseconds(
             Int(Constants.appActivationDelay * 1000)
         ))
 
         // Simulate Cmd+V
-        simulatePaste()
+        print("[PasteFallback] Simulating Cmd+V...")
+        try simulatePaste()
+        print("[PasteFallback] Cmd+V sent")
 
         // Wait before restoring clipboard
         try await Task.sleep(for: .milliseconds(
@@ -28,20 +53,30 @@ final class TextInsertionService: TextInsertionServiceProtocol, @unchecked Senda
 
         // Restore previous clipboard contents
         restorePasteboard(pasteboard, contents: previousContents)
+        print("[PasteFallback] Clipboard restored")
     }
 
     // MARK: - Private
 
-    private func simulatePaste() {
+    private func simulatePaste() throws {
+        // Use .hidSystemState to avoid inheriting modifier keys the user
+        // may still be holding from the hotkey (e.g. Cmd+Shift+Space).
         let source = CGEventSource(stateID: .hidSystemState)
 
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: true)
-        keyDown?.flags = .maskCommand
-        keyDown?.post(tap: .cghidEventTap)
+        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: true),
+              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: false)
+        else {
+            throw TextInsertionError.eventCreationFailed
+        }
 
-        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: false)
-        keyUp?.flags = .maskCommand
-        keyUp?.post(tap: .cghidEventTap)
+        keyDown.flags = .maskCommand
+        keyDown.post(tap: .cgAnnotatedSessionEventTap)
+
+        // Small delay so the target app processes key-down before key-up.
+        Thread.sleep(forTimeInterval: 0.05)
+
+        keyUp.flags = .maskCommand
+        keyUp.post(tap: .cgAnnotatedSessionEventTap)
     }
 
     private func savePasteboard(_ pasteboard: NSPasteboard) -> [NSPasteboard.PasteboardType: Data] {

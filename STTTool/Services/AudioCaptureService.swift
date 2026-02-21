@@ -73,7 +73,11 @@ final class AudioCaptureService: AudioCaptureServiceProtocol {
     }
 
     func startStreaming(onChunk: @escaping (Data) -> Void) throws {
-        guard !isRecording else { return }
+        guard !isRecording else {
+            print("[AudioCapture] startStreaming skipped, already recording")
+            return
+        }
+        print("[AudioCapture] startStreaming")
 
         lock.lock()
         samples.removeAll()
@@ -135,6 +139,8 @@ final class AudioCaptureService: AudioCaptureServiceProtocol {
                 self.lock.lock()
                 self.samples.append(contentsOf: floats)
                 self.lock.unlock()
+            } else {
+                print("[AudioCapture] WARNING: int16ChannelData is nil!")
             }
         }
 

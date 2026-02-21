@@ -1,4 +1,5 @@
 import Foundation
+import Starscream
 
 // MARK: - WebSocket State Machine
 
@@ -10,7 +11,7 @@ enum DeepgramConnectionState {
     case idle
 }
 
-final class DeepgramService: DeepgramServiceProtocol, @unchecked Sendable {
+final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchecked Sendable {
 
     // MARK: - Callbacks
 
@@ -22,18 +23,24 @@ final class DeepgramService: DeepgramServiceProtocol, @unchecked Sendable {
 
     private(set) var isConnected: Bool = false
     private var state: DeepgramConnectionState = .disconnected
-    private var webSocketTask: URLSessionWebSocketTask?
-    private var session: URLSession?
+    private var socket: WebSocket?
     private var keepAliveTimer: Timer?
     private var ttlTimer: Timer?
     private var accumulatedText = ""
+    private var latestInterimText = ""
     private let lock = NSLock()
+    private var chunkCount = 0
+    private var connectContinuation: CheckedContinuation<Void, any Error>?
 
     // MARK: - Connect
 
     func connect(apiKey: String, vocabulary: [String]) async throws {
-        guard state == .disconnected else { return }
+        guard state == .disconnected else {
+            print("[Deepgram] connect skipped, state=\(state)")
+            return
+        }
         state = .connecting
+        print("[Deepgram] connecting...")
 
         var components = URLComponents(string: Constants.deepgramStreamingURL)!
         var queryItems = [
@@ -48,7 +55,7 @@ final class DeepgramService: DeepgramServiceProtocol, @unchecked Sendable {
         ]
 
         for term in vocabulary.prefix(100) {
-            queryItems.append(URLQueryItem(name: "keywords", value: "\(term):1.5"))
+            queryItems.append(URLQueryItem(name: "keyterm", value: term))
         }
 
         components.queryItems = queryItems
@@ -61,60 +68,89 @@ final class DeepgramService: DeepgramServiceProtocol, @unchecked Sendable {
         var request = URLRequest(url: url)
         request.setValue("Token \(apiKey)", forHTTPHeaderField: "Authorization")
 
-        session = URLSession(configuration: .default)
-        webSocketTask = session?.webSocketTask(with: request)
-        webSocketTask?.resume()
+        let socket = WebSocket(request: request)
+        socket.delegate = self
+        self.socket = socket
 
-        state = .ready
-        isConnected = true
-        startReceiving()
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            self.connectContinuation = continuation
+            socket.connect()
+        }
     }
 
     // MARK: - Streaming
 
     func startStreaming() {
-        guard state == .ready || state == .idle else { return }
+        guard state == .ready || state == .idle else {
+            print("[Deepgram] startStreaming skipped, state=\(state)")
+            return
+        }
+        print("[Deepgram] startStreaming")
 
         stopTTLTimer()
         stopKeepAliveTimer()
 
         lock.lock()
         accumulatedText = ""
+        latestInterimText = ""
         lock.unlock()
 
+        chunkCount = 0
         state = .streaming
     }
 
     func sendAudioChunk(_ data: Data) {
         guard state == .streaming else { return }
-        let message = URLSessionWebSocketTask.Message.data(data)
-        webSocketTask?.send(message) { [weak self] error in
-            if let error {
-                self?.handleError(error)
-            }
+        chunkCount += 1
+        if chunkCount <= 3 || chunkCount % 50 == 0 {
+            print("[Deepgram] sendAudioChunk #\(chunkCount): \(data.count) bytes")
         }
+        socket?.write(data: data)
     }
 
     func stopStreaming() async -> String {
         guard state == .streaming else {
-            return getAccumulatedText()
+            print("[Deepgram] stopStreaming skipped, state=\(state)")
+            return getResultText(includeInterimFallback: true)
         }
 
+        print("[Deepgram] stopStreaming, chunks sent: \(chunkCount)")
+        chunkCount = 0
         state = .idle
+
+        // Ask Deepgram to flush pending interim tokens into final segments.
+        socket?.write(string: "{\"type\":\"Finalize\"}")
+
+        // Wait briefly for finalization messages, then fall back to interim if needed.
+        try? await Task.sleep(for: .milliseconds(900))
+
         startKeepAliveTimer()
         startTTLTimer()
 
-        // Small delay to receive final results
-        try? await Task.sleep(for: .milliseconds(500))
-
-        return getAccumulatedText()
+        let result = getResultText(includeInterimFallback: true)
+        print("[Deepgram] stopStreaming result: \"\(result)\"")
+        return result
     }
 
-    private func getAccumulatedText() -> String {
+    private func getResultText(includeInterimFallback: Bool) -> String {
         lock.lock()
-        let text = accumulatedText
+        let finalText = accumulatedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let interimText = latestInterimText.trimmingCharacters(in: .whitespacesAndNewlines)
         lock.unlock()
-        return text
+
+        guard includeInterimFallback, !interimText.isEmpty else {
+            return finalText
+        }
+
+        guard !finalText.isEmpty else {
+            return interimText
+        }
+
+        if finalText.hasSuffix(interimText) {
+            return finalText
+        }
+
+        return finalText + " " + interimText
     }
 
     // MARK: - Disconnect
@@ -124,72 +160,135 @@ final class DeepgramService: DeepgramServiceProtocol, @unchecked Sendable {
         stopTTLTimer()
 
         if state == .streaming || state == .idle || state == .ready {
-            let closeMessage = URLSessionWebSocketTask.Message.string("{\"type\":\"CloseStream\"}")
-            webSocketTask?.send(closeMessage) { _ in }
+            socket?.write(string: "{\"type\":\"CloseStream\"}")
         }
 
-        webSocketTask?.cancel(with: .normalClosure, reason: nil)
-        webSocketTask = nil
-        session?.invalidateAndCancel()
-        session = nil
+        socket?.disconnect()
+        socket = nil
         state = .disconnected
         isConnected = false
+        lock.lock()
+        latestInterimText = ""
+        lock.unlock()
     }
 
-    // MARK: - Receive Loop
+    // MARK: - WebSocketDelegate
 
-    private func startReceiving() {
-        webSocketTask?.receive { [weak self] result in
-            guard let self else { return }
+    func didReceive(event: WebSocketEvent, client: any WebSocketClient) {
+        switch event {
+        case .connected:
+            print("[Deepgram] WebSocket connected")
+            state = .ready
+            isConnected = true
+            connectContinuation?.resume()
+            connectContinuation = nil
 
-            switch result {
-            case .success(let message):
-                self.handleMessage(message)
-                self.startReceiving()
-            case .failure(let error):
-                self.handleError(error)
+        case .disconnected(let reason, let code):
+            print("[Deepgram] WebSocket disconnected: \(reason) (code: \(code))")
+            state = .disconnected
+            isConnected = false
+
+        case .text(let text):
+            handleMessage(text)
+
+        case .binary:
+            print("[Deepgram] received binary message (unexpected)")
+
+        case .error(let error):
+            print("[Deepgram] WebSocket error: \(String(describing: error))")
+            state = .disconnected
+            isConnected = false
+            if let continuation = connectContinuation {
+                connectContinuation = nil
+                continuation.resume(throwing: error ?? DeepgramError.serverError("Connection failed"))
+            } else {
+                DispatchQueue.main.async {
+                    self.onError?(error ?? DeepgramError.serverError("Connection error"))
+                }
             }
+
+        case .cancelled:
+            print("[Deepgram] WebSocket cancelled")
+            state = .disconnected
+            isConnected = false
+
+        case .viabilityChanged(let viable):
+            print("[Deepgram] viability changed: \(viable)")
+
+        case .reconnectSuggested(let suggested):
+            print("[Deepgram] reconnect suggested: \(suggested)")
+
+        case .peerClosed:
+            print("[Deepgram] peer closed")
+            state = .disconnected
+            isConnected = false
+
+        case .pong:
+            break
+        case .ping:
+            break
         }
     }
 
-    private func handleMessage(_ message: URLSessionWebSocketTask.Message) {
-        guard case .string(let text) = message else { return }
+    // MARK: - Message Handling
+
+    private func handleMessage(_ text: String) {
         guard let data = text.data(using: .utf8) else { return }
 
         do {
+            let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let msgType = json?["type"] as? String ?? "unknown"
+
+            // Detect Deepgram error responses
+            if msgType == "Error" {
+                let errMsg = json?["message"] as? String
+                    ?? json?["err_msg"] as? String
+                    ?? text
+                print("[Deepgram] ERROR from server: \(errMsg)")
+                let error = DeepgramError.serverError(errMsg)
+                DispatchQueue.main.async {
+                    self.onError?(error)
+                }
+                return
+            }
+
             let response = try JSONDecoder().decode(DeepgramResponse.self, from: data)
 
-            guard let alternative = response.channel?.alternatives?.first else { return }
+            guard let alternative = response.channel?.alternatives?.first else {
+                if msgType != "Metadata" {
+                    print("[Deepgram] message type=\(msgType), no alternatives")
+                }
+                return
+            }
             let transcript = alternative.transcript ?? ""
 
             if transcript.isEmpty { return }
 
             if response.isFinal == true {
+                print("[Deepgram] FINAL: \"\(transcript)\"")
                 lock.lock()
                 if !accumulatedText.isEmpty && !accumulatedText.hasSuffix(" ") {
                     accumulatedText += " "
                 }
                 accumulatedText += transcript
+                latestInterimText = ""
                 lock.unlock()
 
                 DispatchQueue.main.async {
                     self.onFinalResult?(transcript)
                 }
             } else {
+                print("[Deepgram] interim: \"\(transcript)\"")
+                lock.lock()
+                latestInterimText = transcript
+                lock.unlock()
                 DispatchQueue.main.async {
                     self.onInterimResult?(transcript)
                 }
             }
         } catch {
-            // Ignore non-result messages (metadata, etc.)
+            print("[Deepgram] failed to parse message: \(text.prefix(200))")
         }
-    }
-
-    private func handleError(_ error: Error) {
-        DispatchQueue.main.async {
-            self.onError?(error)
-        }
-        disconnect()
     }
 
     // MARK: - KeepAlive
@@ -213,8 +312,7 @@ final class DeepgramService: DeepgramServiceProtocol, @unchecked Sendable {
     }
 
     private func sendKeepAlive() {
-        let message = URLSessionWebSocketTask.Message.string("{\"type\":\"KeepAlive\"}")
-        webSocketTask?.send(message) { _ in }
+        socket?.write(string: "{\"type\":\"KeepAlive\"}")
     }
 
     // MARK: - TTL Timer

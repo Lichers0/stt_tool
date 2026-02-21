@@ -10,6 +10,7 @@
 		0614ABE69F9F31C207AED536 /* TranscriptionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */; };
 		1680AE08EBCBECBE4A10D975 /* FloatingOverlayWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */; };
 		2CFA6935AB10D91C8295D29F /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDD5A1F62444BCFC4FCDDBC /* Constants.swift */; };
+		2E377949EA555C6A1DF89403 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = FEF7DD52198F2F3B3FA513D1 /* Starscream */; };
 		32A8BDC328045268BD2EBEBA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EB21136745D8C317847AD27 /* AppState.swift */; };
 		33F20E3466D983EEB0088012 /* PermissionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FE229AFF0CBAA802621F02A /* PermissionsService.swift */; };
 		35629D45E6FC52EED9DC1D45 /* DeepgramService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A31B4D12A7D3A1B8605B47F /* DeepgramService.swift */; };
@@ -72,6 +73,7 @@
 			files = (
 				FF3C1F2D5D1B51015718BC56 /* WhisperKit in Frameworks */,
 				9B8BF8688611761FE20E3F01 /* HotKey in Frameworks */,
+				2E377949EA555C6A1DF89403 /* Starscream in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -193,6 +195,7 @@
 			packageProductDependencies = (
 				D9225F84A279DC60013581F5 /* WhisperKit */,
 				129A90D8FD8895EAB6900216 /* HotKey */,
+				FEF7DD52198F2F3B3FA513D1 /* Starscream */,
 			);
 			productName = STTTool;
 			productReference = 5995ABF46F4440EC726AAA17 /* STTTool.app */;
@@ -219,6 +222,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				D212FF7242311C47947C6A66 /* XCRemoteSwiftPackageReference "HotKey" */,
+				D63E9C7D35AFE81463222DDB /* XCRemoteSwiftPackageReference "Starscream" */,
 				56289E6ED5B362892C3EF6D9 /* XCRemoteSwiftPackageReference "WhisperKit" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -464,6 +468,14 @@
 				minimumVersion = 0.2.1;
 			};
 		};
+		D63E9C7D35AFE81463222DDB /* XCRemoteSwiftPackageReference "Starscream" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/daltoniam/Starscream.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.8;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -476,6 +488,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 56289E6ED5B362892C3EF6D9 /* XCRemoteSwiftPackageReference "WhisperKit" */;
 			productName = WhisperKit;
+		};
+		FEF7DD52198F2F3B3FA513D1 /* Starscream */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D63E9C7D35AFE81463222DDB /* XCRemoteSwiftPackageReference "Starscream" */;
+			productName = Starscream;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

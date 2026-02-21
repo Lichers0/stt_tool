@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Combine
 import Foundation
 import SwiftUI
@@ -22,6 +23,8 @@ final class MenuBarViewModel: ObservableObject {
     // MARK: - Private
 
     private var previousApp: NSRunningApplication?
+    private var previousFocusedElement: AXUIElement?
+    private var previousSelectedTextRange: AXValue?
     private let overlay = FloatingOverlayWindow()
     private var recordingTimer: Timer?
     private var recordingSeconds = 0
@@ -107,6 +110,7 @@ final class MenuBarViewModel: ObservableObject {
 
     private func startRecording() {
         previousApp = NSWorkspace.shared.frontmostApplication
+        captureFocusedInputContext()
         isContinueMode = false
 
         let apiKey = services.keychainService.loadAPIKey()
@@ -286,10 +290,9 @@ final class MenuBarViewModel: ObservableObject {
             text = await services.textProcessingPipeline.process(text)
 
             if isContinueMode {
-                if let first = text.first {
-                    text = first.lowercased() + text.dropFirst()
+                if let first = text.first, first.isUppercase {
+                    text = " " + first.lowercased() + text.dropFirst()
                 }
-                text = " " + text
             }
 
             guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -309,7 +312,6 @@ final class MenuBarViewModel: ObservableObject {
             services.historyService.add(record)
             lastTranscription = record
 
-            overlay.showFinalAndDismiss()
             await insertText(text)
         }
     }
@@ -344,10 +346,9 @@ final class MenuBarViewModel: ObservableObject {
                 text = await services.textProcessingPipeline.process(text)
 
                 if isContinueMode {
-                    if let first = text.first {
-                        text = first.lowercased() + text.dropFirst()
+                    if let first = text.first, first.isUppercase {
+                        text = " " + first.lowercased() + text.dropFirst()
                     }
-                    text = " " + text
                 }
 
                 guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -367,7 +368,6 @@ final class MenuBarViewModel: ObservableObject {
                 services.historyService.add(record)
                 lastTranscription = record
 
-                overlay.showFinalAndDismiss()
                 await insertText(text)
             } catch {
                 appState = .error(error.localizedDescription)
@@ -382,19 +382,88 @@ final class MenuBarViewModel: ObservableObject {
 
     private func insertText(_ text: String) async {
         appState = .inserting
+        print("[InsertText] === START === text=\(text.prefix(80))...")
+
+        // Dismiss overlay completely before activating target app --
+        // a floating NSPanel can interfere with app activation on macOS 15+
+        overlay.dismissImmediately()
+        print("[InsertText] Overlay dismissed")
 
         if let app = previousApp {
-            app.activate()
+            print("[InsertText] Activating app: \(app.localizedName ?? "?") (pid=\(app.processIdentifier))")
+            let activated = app.activate()
+            print("[InsertText] activate() returned: \(activated)")
+            await waitForAppActivation(app)
+            let frontmost = NSWorkspace.shared.frontmostApplication
+            print("[InsertText] After wait, frontmost: \(frontmost?.localizedName ?? "nil") (pid=\(frontmost?.processIdentifier ?? -1))")
+            restoreFocusedInputContext()
+            print("[InsertText] Focus restored, element=\(previousFocusedElement != nil), range=\(previousSelectedTextRange != nil)")
+            // Ensure hotkey key-up is processed before simulated paste.
+            try? await Task.sleep(for: .milliseconds(150))
+        } else {
+            print("[InsertText] WARNING: previousApp is nil!")
         }
 
+        // Try direct Accessibility text insertion first (most reliable).
+        if let element = previousFocusedElement,
+           insertViaAccessibility(text, into: element) {
+            appState = .idle
+            NSSound.pop?.play()
+            print("[InsertText] === DONE via Accessibility ===")
+            return
+        }
+
+        // Fallback: clipboard + simulated Cmd+V paste.
+        print("[InsertText] Trying fallback: clipboard + Cmd+V")
         do {
             try await services.textInsertionService.insertText(text)
             appState = .idle
             NSSound.pop?.play()
+            print("[InsertText] === DONE via clipboard paste ===")
         } catch {
+            print("[InsertText] ERROR: \(error.localizedDescription)")
             appState = .error(error.localizedDescription)
             resetToIdleAfterDelay()
         }
+    }
+
+    private func insertViaAccessibility(_ text: String, into element: AXUIElement) -> Bool {
+        guard AXIsProcessTrusted() else { return false }
+
+        // Read the value before insertion to compare later.
+        var valueBefore: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueBefore)
+        let beforeStr = valueBefore as? String
+
+        let result = AXUIElementSetAttributeValue(
+            element,
+            kAXSelectedTextAttribute as CFString,
+            text as CFTypeRef
+        )
+
+        guard result == .success else {
+            print("[TextInsertion] AX set failed (\(result.rawValue)), falling back to paste")
+            return false
+        }
+
+        // Verify: read the value after insertion and check the text actually appeared.
+        // Terminal emulators (Ghostty, iTerm2, etc.) report success but don't insert.
+        var valueAfter: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueAfter)
+        let afterStr = valueAfter as? String
+
+        if let after = afterStr {
+            if after != (beforeStr ?? "") && after.contains(text) {
+                print("[TextInsertion] Verified via AX API")
+                return true
+            }
+            print("[TextInsertion] AX reported success but text not found in element, falling back to paste")
+            return false
+        }
+
+        // Cannot read value attribute -- trust the AX result.
+        print("[TextInsertion] Cannot verify (no value attribute), trusting AX result")
+        return true
     }
 
     // MARK: - Recording Timer
@@ -433,6 +502,90 @@ final class MenuBarViewModel: ObservableObject {
             data.append(Data(bytes: &int16Value, count: 2))
         }
         return data
+    }
+
+    private func captureFocusedInputContext() {
+        previousFocusedElement = nil
+        previousSelectedTextRange = nil
+
+        guard AXIsProcessTrusted() else {
+            print("[Capture] AXIsProcessTrusted = false!")
+            return
+        }
+        guard let app = previousApp else {
+            print("[Capture] previousApp is nil")
+            return
+        }
+
+        print("[Capture] Capturing context for app: \(app.localizedName ?? "?") (pid=\(app.processIdentifier))")
+
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        var focused: CFTypeRef?
+        let focusResult = AXUIElementCopyAttributeValue(
+            appElement,
+            kAXFocusedUIElementAttribute as CFString,
+            &focused
+        )
+
+        guard focusResult == .success, let focusedElement = focused else {
+            print("[Capture] Failed to get focused element: \(focusResult.rawValue)")
+            return
+        }
+        let element = unsafeBitCast(focusedElement, to: AXUIElement.self)
+        previousFocusedElement = element
+
+        var role: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &role)
+        print("[Capture] Focused element role: \(role as? String ?? "unknown")")
+
+        var selectedRange: CFTypeRef?
+        let rangeResult = AXUIElementCopyAttributeValue(
+            element,
+            kAXSelectedTextRangeAttribute as CFString,
+            &selectedRange
+        )
+
+        if rangeResult == .success, let range = selectedRange {
+            previousSelectedTextRange = unsafeBitCast(range, to: AXValue.self)
+            print("[Capture] Selected text range captured")
+        } else {
+            print("[Capture] No selected text range: \(rangeResult.rawValue)")
+        }
+    }
+
+    private func restoreFocusedInputContext() {
+        guard AXIsProcessTrusted() else { return }
+        guard let app = previousApp, let focusedElement = previousFocusedElement else { return }
+
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        _ = AXUIElementSetAttributeValue(
+            appElement,
+            kAXFocusedUIElementAttribute as CFString,
+            focusedElement
+        )
+        _ = AXUIElementSetAttributeValue(
+            focusedElement,
+            kAXFocusedAttribute as CFString,
+            kCFBooleanTrue
+        )
+
+        if let selectedTextRange = previousSelectedTextRange {
+            _ = AXUIElementSetAttributeValue(
+                focusedElement,
+                kAXSelectedTextRangeAttribute as CFString,
+                selectedTextRange
+            )
+        }
+    }
+
+    private func waitForAppActivation(_ app: NSRunningApplication) async {
+        let deadline = Date().addingTimeInterval(1.5)
+        while Date() < deadline {
+            if NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier {
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(40))
+        }
     }
 }
 

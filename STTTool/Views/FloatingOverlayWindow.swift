@@ -46,6 +46,7 @@ final class FloatingOverlayWindow: NSPanel {
     }
 
     func updateFinalSegment(_ text: String) {
+        overlayViewModel.interimText = ""
         overlayViewModel.appendFinalText(text)
         updateSize()
     }
@@ -77,9 +78,12 @@ final class FloatingOverlayWindow: NSPanel {
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2
             self.animator().alphaValue = 0
-        }) {
-            self.orderOut(nil)
-            self.overlayViewModel.reset()
+        }) { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                self.orderOut(nil)
+                self.overlayViewModel.reset()
+            }
         }
     }
 

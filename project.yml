@@ -13,6 +13,9 @@ packages:
   HotKey:
     url: https://github.com/soffes/HotKey.git
     from: "0.2.1"
+  Starscream:
+    url: https://github.com/daltoniam/Starscream.git
+    from: "4.0.8"
 
 targets:
   STTTool:
@@ -36,3 +39,4 @@ targets:
     dependencies:
       - package: WhisperKit
       - package: HotKey
+      - package: Starscream
