@@ -106,6 +106,11 @@ final class MenuBarViewModel: ObservableObject {
                 self?.toggleMode()
             }
         }
+        services.hotKeyService.onCancel = { [weak self] in
+            Task { @MainActor in
+                self?.cancelRecording()
+            }
+        }
         services.hotKeyService.register()
     }
 
@@ -113,6 +118,31 @@ final class MenuBarViewModel: ObservableObject {
         guard appState == .recording || appState == .streamingRecording else { return }
         isContinueMode.toggle()
         overlay.setMode(isContinueMode)
+    }
+
+    private func cancelRecording() {
+        guard appState == .recording || appState == .streamingRecording else { return }
+
+        stopRecordingTimer()
+        unregisterOverlayHotkeys()
+        services.hotKeyService.unregisterModeToggle()
+        services.hotKeyService.unregisterCancel()
+
+        if appState == .streamingRecording {
+            _ = services.audioCaptureService.stopStreamingAndGetSamples()
+            let mode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
+            if mode == "streaming" {
+                nonisolated(unsafe) let deepgram = services.deepgramService
+                deepgram.disconnect()
+            }
+        } else {
+            _ = services.audioCaptureService.stopRecording()
+        }
+
+        overlay.dismissImmediately()
+        appState = .idle
+        NSSound.basso?.play()
+        print("[Cancel] Recording cancelled by user")
     }
 
     // MARK: - Start Recording
@@ -146,6 +176,7 @@ final class MenuBarViewModel: ObservableObject {
         do {
             try services.audioCaptureService.startRecording()
             appState = .recording
+            services.hotKeyService.registerCancel()
             NSSound.tink?.play()
         } catch {
             appState = .error(error.localizedDescription)
@@ -230,6 +261,7 @@ final class MenuBarViewModel: ObservableObject {
                 self?.overlay.dismissImmediately()
                 self?.stopRecordingTimer()
                 self?.services.hotKeyService.unregisterModeToggle()
+                self?.services.hotKeyService.unregisterCancel()
                 self?.resetToIdleAfterDelay()
             }
         }
@@ -247,6 +279,7 @@ final class MenuBarViewModel: ObservableObject {
 
                 appState = .streamingRecording
                 services.hotKeyService.registerModeToggle()
+                services.hotKeyService.registerCancel()
                 NSSound.tink?.play()
             } catch {
                 appState = .error(error.localizedDescription)
@@ -264,6 +297,7 @@ final class MenuBarViewModel: ObservableObject {
             }
             appState = .streamingRecording
             services.hotKeyService.registerModeToggle()
+            services.hotKeyService.registerCancel()
             NSSound.tink?.play()
         } catch {
             appState = .error(error.localizedDescription)
@@ -279,6 +313,7 @@ final class MenuBarViewModel: ObservableObject {
         stopRecordingTimer()
         unregisterOverlayHotkeys()
         services.hotKeyService.unregisterModeToggle()
+        services.hotKeyService.unregisterCancel()
 
         if appState == .streamingRecording {
             let mode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
@@ -604,6 +639,7 @@ final class MenuBarViewModel: ObservableObject {
                 stopRecordingTimer()
                 unregisterOverlayHotkeys()
                 services.hotKeyService.unregisterModeToggle()
+                services.hotKeyService.unregisterCancel()
                 _ = services.audioCaptureService.stopStreamingAndGetSamples()
                 resetToIdleAfterDelay()
                 print("[VocabSwitch] Reconnection failed: \(error.localizedDescription)")

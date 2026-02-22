@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
     @State private var permissionsService: PermissionsServiceProtocol
+    @State private var activeSubTab = "general"
 
     init(viewModel: SettingsViewModel) {
         self.viewModel = viewModel
@@ -10,63 +11,176 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Settings")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            // Header + sub-tabs
+            VStack(alignment: .leading, spacing: DS.Spacing.md) {
+                Text("Settings")
+                    .font(DS.Typography.header)
 
-            engineSection
-            Divider()
-            if viewModel.selectedEngine == "deepgram" {
-                vocabularySection
-                Divider()
+                SegmentedPicker(
+                    items: [
+                        ("General", "general"),
+                        ("Engine", "engine"),
+                        ("Permissions", "permissions")
+                    ],
+                    selection: $activeSubTab
+                )
             }
-            if viewModel.selectedEngine == "whisperkit" {
-                modelSection
-                Divider()
+            .padding(.horizontal, DS.Spacing.lg)
+            .padding(.top, DS.Spacing.lg)
+
+            // Content
+            ScrollView {
+                switch activeSubTab {
+                case "general":
+                    generalTab
+                case "engine":
+                    engineTab
+                case "permissions":
+                    permissionsTab
+                default:
+                    EmptyView()
+                }
             }
-            permissionsSection
-            Divider()
-            hotkeySection
+            .frame(maxHeight: 360)
         }
-        .padding(16)
-        .frame(width: 340)
+        .padding(.bottom, DS.Spacing.lg)
     }
 
-    // MARK: - Engine Section
+    // MARK: - General Tab
 
-    private var engineSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Transcription Engine")
-                .font(.subheadline)
-                .fontWeight(.medium)
+    private var generalTab: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.xl) {
+            // Record Toggle
+            sectionLabel("RECORD TOGGLE")
+            HotKeyRecorderView(viewModel: viewModel)
 
-            Picker("", selection: $viewModel.selectedEngine) {
-                Text("Deepgram (online)").tag("deepgram")
-                Text("WhisperKit (offline)").tag("whisperkit")
+            Divider()
+
+            // Mode Toggle Key
+            sectionLabel("MODE TOGGLE KEY")
+            HStack {
+                kbdBadge(viewModel.modeToggleKeyDisplayString)
             }
-            .pickerStyle(.segmented)
+
+            Divider()
+
+            // Cancel Recording
+            sectionLabel("CANCEL RECORDING")
+            CancelKeyRecorderView(viewModel: viewModel)
+
+            Divider()
+
+            // Vocabulary Switching (read-only)
+            sectionLabel("VOCABULARY SWITCHING")
+            HStack(spacing: DS.Spacing.xs) {
+                kbdBadge("Left")
+                kbdBadge("Right")
+                Text("+")
+                    .font(DS.Typography.tinyLabel)
+                    .foregroundStyle(.secondary)
+                kbdBadge("Enter")
+            }
+            Text("Switch vocabularies during recording (hardcoded)")
+                .font(DS.Typography.tinyLabel)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.top, DS.Spacing.xs)
+    }
+
+    // MARK: - Engine Tab
+
+    private var engineTab: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.xl) {
+            // Engine picker
+            sectionLabel("TRANSCRIPTION ENGINE")
+            SegmentedPicker(
+                items: [
+                    ("Deepgram", "deepgram"),
+                    ("WhisperKit", "whisperkit")
+                ],
+                selection: $viewModel.selectedEngine
+            )
             .onChange(of: viewModel.selectedEngine) { _, newValue in
                 viewModel.setEngine(newValue)
             }
 
             if viewModel.selectedEngine == "deepgram" {
-                deepgramSettingsSection
+                Divider()
+                deepgramSettings
+            }
+
+            if viewModel.selectedEngine == "whisperkit" {
+                Divider()
+                whisperSettings
             }
         }
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.top, DS.Spacing.xs)
     }
 
-    private var deepgramSettingsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Picker("Mode:", selection: $viewModel.deepgramMode) {
-                Text("Streaming").tag("streaming")
-                Text("REST").tag("rest")
-            }
-            .pickerStyle(.segmented)
+    private var deepgramSettings: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.xl) {
+            // Mode
+            sectionLabel("MODE")
+            SegmentedPicker(
+                items: [("Streaming", "streaming"), ("REST", "rest")],
+                selection: $viewModel.deepgramMode
+            )
             .onChange(of: viewModel.deepgramMode) { _, newValue in
                 viewModel.setDeepgramMode(newValue)
             }
 
+            Divider()
+
+            // API Key
+            sectionLabel("API KEY")
             apiKeySection
+
+            Divider()
+
+            // Vocabulary
+            sectionLabel("VOCABULARY")
+            ActionButton(
+                icon: "character.book.closed",
+                text: "Manage Vocabularies...",
+                style: .outline
+            ) {
+                VocabularyManagerWindow.showShared()
+            }
+            Text("Create themed vocabularies to improve recognition accuracy for specialized terms.")
+                .font(DS.Typography.tinyLabel)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var whisperSettings: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+            sectionLabel("MODEL")
+            ForEach(viewModel.availableModels, id: \.self) { model in
+                Button(action: { viewModel.selectModel(model) }) {
+                    HStack {
+                        Image(systemName: model == viewModel.selectedModel
+                              ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(model == viewModel.selectedModel
+                                             ? DS.Colors.primary : .secondary)
+                            .font(.system(size: 14))
+                        Text(viewModel.modelDescriptions[model] ?? model)
+                            .font(.system(size: 12, weight: .medium))
+                        Spacer()
+                    }
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, DS.Spacing.md)
+                    .background(
+                        RoundedRectangle(cornerRadius: DS.Radius.lg)
+                            .fill(model == viewModel.selectedModel
+                                  ? DS.Colors.primary.opacity(0.05)
+                                  : Color.clear)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
@@ -76,27 +190,31 @@ struct SettingsView: View {
     @State private var isEditingKey = false
 
     private var apiKeySection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("API Key")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
             if viewModel.hasAPIKey && !isEditingKey {
                 HStack {
                     Text("............")
-                        .font(.caption)
-                    Spacer()
-                    Button("Change") { isEditingKey = true }
-                        .font(.caption).controlSize(.small)
-                    Button("Delete") { viewModel.deleteAPIKey() }
-                        .font(.caption).controlSize(.small)
-                        .foregroundStyle(.red)
+                        .font(DS.Typography.monoCaption)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, DS.Spacing.md)
+                        .padding(.vertical, DS.Spacing.sm)
+                        .background(
+                            RoundedRectangle(cornerRadius: DS.Radius.md)
+                                .fill(DS.Colors.surfaceSubtle)
+                        )
+                    ActionButton(
+                        icon: "pencil",
+                        text: "Change",
+                        style: .outline
+                    ) {
+                        isEditingKey = true
+                    }
                 }
             } else {
                 HStack {
-                    SecureField("Deepgram API Key", text: $newAPIKey)
+                    SecureField("Enter API key...", text: $newAPIKey)
                         .textFieldStyle(.roundedBorder)
-                        .font(.caption)
+                        .font(DS.Typography.caption)
                     Button(viewModel.isValidatingKey ? "..." : "Save") {
                         Task {
                             await viewModel.saveAPIKey(newAPIKey)
@@ -104,138 +222,104 @@ struct SettingsView: View {
                             isEditingKey = false
                         }
                     }
-                    .font(.caption).controlSize(.small)
+                    .controlSize(.small)
                     .disabled(newAPIKey.isEmpty || viewModel.isValidatingKey)
                     if isEditingKey {
                         Button("Cancel") { isEditingKey = false; newAPIKey = "" }
-                            .font(.caption).controlSize(.small)
+                            .controlSize(.small)
                     }
                 }
                 if let error = viewModel.apiKeyError {
-                    Text(error).font(.caption2).foregroundStyle(.red)
+                    Text(error)
+                        .font(DS.Typography.tinyLabel)
+                        .foregroundStyle(DS.Colors.destructive)
                 }
             }
         }
     }
 
-    // MARK: - Vocabulary Section
+    // MARK: - Permissions Tab
 
-    private var vocabularySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Vocabulary")
-                .font(.subheadline)
-                .fontWeight(.medium)
-
-            Button("Manage Vocabularies...") {
-                VocabularyManagerWindow.showShared()
-            }
-            .font(.caption)
-
-            Text("Create themed vocabularies to improve recognition of specific terms.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    // MARK: - Model Section
-
-    private var modelSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Whisper Model")
-                .font(.subheadline)
-                .fontWeight(.medium)
-
-            ForEach(viewModel.availableModels, id: \.self) { model in
-                Button(action: { viewModel.selectModel(model) }) {
-                    HStack {
-                        Image(systemName: model == viewModel.selectedModel
-                              ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(model == viewModel.selectedModel ? .blue : .secondary)
-                        VStack(alignment: .leading) {
-                            Text(viewModel.modelDescriptions[model] ?? model)
-                                .font(.caption)
-                        }
-                        Spacer()
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    // MARK: - Permissions Section
-
-    private var permissionsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Permissions")
-                .font(.subheadline)
-                .fontWeight(.medium)
-
+    private var permissionsTab: some View {
+        VStack(spacing: DS.Spacing.md) {
             permissionRow(
-                title: "Microphone",
+                id: "microphone",
+                label: "Microphone",
                 granted: permissionsService.isMicrophoneGranted,
-                action: {
-                    Task {
-                        _ = await permissionsService.requestMicrophoneAccess()
-                    }
-                }
+                grantAction: {
+                    Task { _ = await permissionsService.requestMicrophoneAccess() }
+                },
+                grantLabel: "Grant"
             )
 
             permissionRow(
-                title: "Accessibility",
+                id: "accessibility",
+                label: "Accessibility",
                 granted: permissionsService.isAccessibilityGranted,
-                action: {
-                    permissionsService.openAccessibilitySettings()
-                }
+                grantAction: { permissionsService.openAccessibilitySettings() },
+                grantLabel: "Open Settings"
             )
 
-            Button("Refresh") {
+            ActionButton(
+                icon: "arrow.clockwise",
+                text: "Refresh Status"
+            ) {
                 permissionsService.checkPermissions()
             }
-            .font(.caption)
+            .frame(maxWidth: .infinity)
         }
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.top, DS.Spacing.xs)
     }
 
     private func permissionRow(
-        title: String,
+        id: String,
+        label: String,
         granted: Bool,
-        action: @escaping () -> Void
+        grantAction: @escaping () -> Void,
+        grantLabel: String
     ) -> some View {
         HStack {
-            Image(systemName: granted ? "checkmark.circle.fill" : "xmark.circle")
-                .foregroundStyle(granted ? .green : .red)
-            Text(title)
-                .font(.caption)
+            HStack(spacing: DS.Spacing.sm) {
+                Image(systemName: granted ? "checkmark.circle.fill" : "xmark.circle")
+                    .foregroundStyle(granted ? .green : .red)
+                    .font(.system(size: 14))
+                Text(label)
+                    .font(.system(size: 12, weight: .medium))
+            }
             Spacer()
             if !granted {
-                Button("Grant", action: action)
-                    .font(.caption)
+                Button(grantLabel, action: grantAction)
                     .controlSize(.small)
             }
         }
+        .padding(DS.Spacing.md)
+        .background(
+            RoundedRectangle(cornerRadius: DS.Radius.lg)
+                .fill(granted ? DS.Colors.grantedBg : DS.Colors.deniedBg)
+        )
     }
 
-    // MARK: - Hotkey Section
+    // MARK: - Helpers
 
-    private var hotkeySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Hotkey")
-                .font(.subheadline)
-                .fontWeight(.medium)
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(DS.Typography.tinyLabel)
+            .tracking(0.5)
+            .foregroundStyle(.secondary)
+    }
 
-            HotKeyRecorderView(viewModel: viewModel)
-
-            HStack {
-                Text("Mode Toggle:")
-                    .font(.caption)
-                Text(viewModel.modeToggleKeyDisplayString)
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(nsColor: .quaternarySystemFill))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-            }
-        }
+    private func kbdBadge(_ text: String) -> some View {
+        Text(text)
+            .font(DS.Typography.monoCaption)
+            .padding(.horizontal, DS.Spacing.sm)
+            .padding(.vertical, DS.Spacing.xs)
+            .background(DS.Colors.surfaceSubtle)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+            )
     }
 }
 
@@ -247,64 +331,115 @@ private struct HotKeyRecorderView: View {
     @State private var eventMonitor: Any?
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Spacing.sm) {
             Button(action: toggleRecording) {
                 Text(isRecording ? "Type shortcut..." : viewModel.hotKeyDisplayString)
-                    .font(.caption)
+                    .font(DS.Typography.monoCaption)
                     .frame(minWidth: 120)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xs)
                     .background(isRecording
-                                ? Color.accentColor.opacity(0.15)
-                                : Color(nsColor: .quaternarySystemFill))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                                ? DS.Colors.primarySubtle
+                                : DS.Colors.surfaceSubtle)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(isRecording ? Color.accentColor : .clear, lineWidth: 1)
+                        RoundedRectangle(cornerRadius: DS.Radius.sm)
+                            .stroke(isRecording ? DS.Colors.primary : Color(nsColor: .separatorColor),
+                                    lineWidth: isRecording ? 1 : 0.5)
                     )
             }
             .buttonStyle(.plain)
 
             if !isRecording {
-                Button("Reset") {
+                ActionButton(icon: "arrow.counterclockwise", text: "Reset") {
                     viewModel.resetHotKey()
                 }
-                .font(.caption)
-                .controlSize(.small)
             }
         }
         .onDisappear { stopRecording() }
     }
 
     private func toggleRecording() {
-        if isRecording {
-            stopRecording()
-        } else {
-            startRecording()
-        }
+        if isRecording { stopRecording() } else { startRecording() }
     }
 
     private func startRecording() {
         isRecording = true
         viewModel.suspendHotKey()
-
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            // Escape cancels recording
             if event.keyCode == 53 {
                 stopRecording()
                 return nil
             }
-
             let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
                 .subtracting(.capsLock)
-
-            // Require at least one modifier key
             let requiredMods: NSEvent.ModifierFlags = [.command, .shift, .option, .control]
             guard !mods.intersection(requiredMods).isEmpty else { return nil }
-
             viewModel.hotKeyKeyCode = UInt32(event.keyCode)
             viewModel.hotKeyModifiers = UInt32(mods.rawValue)
             viewModel.saveHotKey()
+            stopRecording()
+            return nil
+        }
+    }
+
+    private func stopRecording() {
+        guard isRecording else { return }
+        isRecording = false
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
+        }
+        viewModel.resumeHotKey()
+    }
+}
+
+// MARK: - Cancel Key Recorder
+
+private struct CancelKeyRecorderView: View {
+    @ObservedObject var viewModel: SettingsViewModel
+    @State private var isRecording = false
+    @State private var eventMonitor: Any?
+
+    var body: some View {
+        HStack(spacing: DS.Spacing.sm) {
+            Button(action: toggleRecording) {
+                Text(isRecording ? "Press a key..." : viewModel.cancelKeyDisplayString)
+                    .font(DS.Typography.monoCaption)
+                    .frame(minWidth: 120)
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xs)
+                    .background(isRecording
+                                ? DS.Colors.primarySubtle
+                                : DS.Colors.surfaceSubtle)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DS.Radius.sm)
+                            .stroke(isRecording ? DS.Colors.primary : Color(nsColor: .separatorColor),
+                                    lineWidth: isRecording ? 1 : 0.5)
+                    )
+            }
+            .buttonStyle(.plain)
+
+            if !isRecording {
+                ActionButton(icon: "arrow.counterclockwise", text: "Reset") {
+                    viewModel.resetCancelKey()
+                }
+            }
+        }
+        .onDisappear { stopRecording() }
+    }
+
+    private func toggleRecording() {
+        if isRecording { stopRecording() } else { startRecording() }
+    }
+
+    private func startRecording() {
+        isRecording = true
+        viewModel.suspendHotKey()
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            viewModel.cancelKeyCode = UInt32(event.keyCode)
+            viewModel.saveCancelKey()
             stopRecording()
             return nil
         }

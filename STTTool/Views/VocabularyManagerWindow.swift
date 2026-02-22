@@ -22,14 +22,14 @@ final class VocabularyManagerWindow: NSWindow {
 
     init() {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 460),
+            contentRect: NSRect(x: 0, y: 0, width: 680, height: 460),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
             defer: true
         )
 
         title = "Vocabulary Manager"
-        minSize = NSSize(width: 500, height: 350)
+        minSize = NSSize(width: 540, height: 380)
         isReleasedWhenClosed = false
 
         let view = VocabularyManagerView()
@@ -44,83 +44,85 @@ struct VocabularyManagerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NavigationSplitView {
+            // Two-panel layout with visible divider
+            HStack(spacing: 0) {
                 sidebarView
-                    .frame(minWidth: 180)
-            } detail: {
+                    .frame(minWidth: 180, maxWidth: 220)
+
+                // Visible divider between panels
+                Rectangle()
+                    .fill(Color(nsColor: .separatorColor))
+                    .frame(width: 1)
+
                 detailView
+                    .frame(maxWidth: .infinity)
             }
 
+            Divider()
+
+            // Footer
             if let service = VocabularyServiceShared.instance as? VocabularyService {
-                Divider()
                 VocabularyManagerFooter(
                     service: service,
                     vocabularies: viewModel.sortedVocabularies
                 )
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
             }
         }
-        .frame(minWidth: 500, minHeight: 360)
+        .frame(minWidth: 540, minHeight: 380)
     }
 
     // MARK: - Sidebar
 
     private var sidebarView: some View {
         VStack(spacing: 0) {
-            List(selection: $viewModel.selectedVocabularyId) {
-                ForEach(viewModel.sortedVocabularies) { vocab in
-                    VocabularySidebarRow(
-                        vocabulary: vocab,
-                        isActive: vocab.id == viewModel.activeVocabularyId,
-                        isEditing: viewModel.renamingId == vocab.id,
-                        editedName: $viewModel.editedName,
-                        onCommitRename: { viewModel.commitRename() },
-                        onCancelRename: { viewModel.cancelRename() }
-                    )
-                    .tag(vocab.id)
+            // Vocabulary list
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(viewModel.sortedVocabularies) { vocab in
+                        VocabularySidebarRow(
+                            vocabulary: vocab,
+                            isSelected: vocab.id == viewModel.selectedVocabularyId,
+                            isActive: vocab.id == viewModel.activeVocabularyId,
+                            isEditing: viewModel.renamingId == vocab.id,
+                            editedName: $viewModel.editedName,
+                            onSelect: {
+                                viewModel.selectedVocabularyId = vocab.id
+                            },
+                            onDoubleClick: {
+                                viewModel.selectedVocabularyId = vocab.id
+                                viewModel.renameSelected()
+                            },
+                            onCommitRename: { viewModel.commitRename() },
+                            onCancelRename: { viewModel.cancelRename() }
+                        )
+                    }
                 }
-                .onMove { source, destination in
-                    viewModel.reorder(from: source, to: destination)
-                }
+                .padding(.vertical, 2)
             }
-            .listStyle(.sidebar)
 
-            // Toolbar
-            HStack(spacing: 12) {
-                Button(action: viewModel.createNew) {
-                    Image(systemName: "plus")
+            Divider()
+
+            // Sidebar toolbar
+            HStack(spacing: 2) {
+                HStack(spacing: 2) {
+                    ActionButton(icon: "plus") { viewModel.createNew() }
+                        .help("New vocabulary")
+                    ActionButton(icon: "doc.on.doc") { viewModel.duplicateSelected() }
+                        .disabled(viewModel.selectedVocabularyId == nil)
+                        .help("Duplicate")
+                    ActionButton(icon: "pencil") { viewModel.renameSelected() }
+                        .disabled(viewModel.selectedVocabularyId == nil)
+                        .help("Rename")
                 }
-                .buttonStyle(.plain)
-                .help("New vocabulary")
-
-                Button(action: viewModel.duplicateSelected) {
-                    Image(systemName: "doc.on.doc")
-                }
-                .buttonStyle(.plain)
-                .disabled(viewModel.selectedVocabularyId == nil)
-                .help("Duplicate")
-
-                Button(action: viewModel.renameSelected) {
-                    Image(systemName: "pencil")
-                }
-                .buttonStyle(.plain)
-                .disabled(viewModel.selectedVocabularyId == nil)
-                .help("Rename")
-
                 Spacer()
-
-                Button(action: viewModel.deleteSelected) {
-                    Image(systemName: "trash")
-                }
-                .buttonStyle(.plain)
-                .disabled(viewModel.selectedVocabularyId == nil || viewModel.sortedVocabularies.count <= 1)
-                .help("Delete vocabulary")
+                ActionButton(icon: "trash", destructive: true) { viewModel.deleteSelected() }
+                    .disabled(viewModel.selectedVocabularyId == nil || viewModel.sortedVocabularies.count <= 1)
+                    .help("Delete vocabulary")
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .padding(.horizontal, DS.Spacing.sm)
+            .padding(.vertical, 6)
         }
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
     }
 
     // MARK: - Detail
@@ -139,6 +141,7 @@ struct VocabularyManagerView: View {
             )
         } else {
             Text("Select a vocabulary")
+                .font(DS.Typography.caption)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -147,43 +150,73 @@ struct VocabularyManagerView: View {
 
 // MARK: - Sidebar Row
 
-struct VocabularySidebarRow: View {
+private struct VocabularySidebarRow: View {
     let vocabulary: Vocabulary
+    let isSelected: Bool
     let isActive: Bool
     let isEditing: Bool
     @Binding var editedName: String
+    let onSelect: () -> Void
+    let onDoubleClick: () -> Void
     let onCommitRename: () -> Void
     let onCancelRename: () -> Void
 
+    @State private var isHovering = false
+
     var body: some View {
-        HStack {
+        HStack(spacing: DS.Spacing.sm) {
             if isActive {
                 Circle()
-                    .fill(.blue)
-                    .frame(width: 6, height: 6)
+                    .fill(DS.Colors.primary)
+                    .frame(width: 5, height: 5)
             }
 
             if isEditing {
-                TextField("Name", text: $editedName, onCommit: onCommitRename)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.body)
-                    .onExitCommand(perform: onCancelRename)
+                HStack(spacing: 4) {
+                    TextField("Name", text: $editedName, onCommit: onCommitRename)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 12))
+                        .onExitCommand(perform: onCancelRename)
+                    Button(action: onCommitRename) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
             } else {
-                VStack(alignment: .leading) {
+                HStack {
                     Text(vocabulary.name)
-                        .fontWeight(isActive ? .semibold : .regular)
-                    Text("\(vocabulary.terms.count) terms")
-                        .font(.caption2)
+                        .font(.system(size: 12, weight: isActive ? .semibold : .medium))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer()
+                    Text("\(vocabulary.terms.count)")
+                        .font(DS.Typography.tinyLabel)
                         .foregroundStyle(.secondary)
                 }
             }
         }
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.vertical, DS.Spacing.sm)
+        .background(
+            RoundedRectangle(cornerRadius: DS.Radius.sm)
+                .fill(isSelected
+                      ? DS.Colors.primarySubtle
+                      : isHovering ? DS.Colors.surfaceHover : Color.clear)
+        )
+        .padding(.horizontal, 4)
+        .foregroundStyle(isSelected ? DS.Colors.primary : .primary)
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { onDoubleClick() }
+        .onTapGesture(count: 1) { onSelect() }
+        .onHover { hovering in isHovering = hovering }
     }
 }
 
 // MARK: - Detail View
 
-struct VocabularyDetailView: View {
+private struct VocabularyDetailView: View {
     let vocabulary: Vocabulary
     let otherVocabularies: [Vocabulary]
     let onAddTerm: (String) -> Void
@@ -197,177 +230,264 @@ struct VocabularyDetailView: View {
     @State private var selectedTerms: Set<String> = []
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(spacing: 0) {
             // Header
             HStack {
                 Text(vocabulary.name)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-
+                    .font(DS.Typography.header)
                 Spacer()
-
-                if isSelectionMode {
-                    selectionToolbar
-                } else {
-                    Button(action: { isSelectionMode = true }) {
-                        Image(systemName: "checkmark.circle")
-                            .font(.body)
+                if vocabulary.terms.count > 0 {
+                    ActionButton(
+                        icon: isSelectionMode ? "xmark" : "checkmark.circle",
+                        text: isSelectionMode ? "Cancel" : "Select"
+                    ) {
+                        if isSelectionMode {
+                            exitSelectionMode()
+                        } else {
+                            isSelectionMode = true
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .disabled(vocabulary.terms.isEmpty)
-                    .help("Select terms")
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, DS.Spacing.lg)
+            .padding(.vertical, DS.Spacing.md)
 
             Divider()
 
-            // Add term
-            HStack {
-                TextField("Add term", text: $newTerm)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { addTerm() }
-                Button(action: { addTerm() }) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.body)
-                }
-                .buttonStyle(.plain)
-                .disabled(newTerm.isEmpty || vocabulary.terms.count >= 100)
-                .help("Add term")
+            // Selection toolbar
+            if isSelectionMode {
+                selectionToolbar
+                Divider()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
 
-            // Term list
-            List {
-                ForEach(vocabulary.terms, id: \.self) { term in
-                    termRow(term)
+            // Add term (hidden during selection mode)
+            if !isSelectionMode {
+                HStack(spacing: DS.Spacing.sm) {
+                    TextField("Add term...", text: $newTerm)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 12))
+                        .onSubmit { addTerm() }
+                    Button(action: addTerm) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white)
+                            .frame(width: 28, height: 28)
+                            .background(
+                                RoundedRectangle(cornerRadius: DS.Radius.md)
+                                    .fill(newTerm.isEmpty || vocabulary.terms.count >= 100
+                                          ? DS.Colors.primary.opacity(0.4)
+                                          : DS.Colors.primary)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(newTerm.isEmpty || vocabulary.terms.count >= 100)
+                }
+                .padding(.horizontal, DS.Spacing.lg)
+                .padding(.vertical, 10)
+                Divider()
+            }
+
+            // Terms list
+            ScrollView {
+                if vocabulary.terms.isEmpty {
+                    Text("No terms added yet")
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 48)
+                } else {
+                    LazyVStack(spacing: 0) {
+                        ForEach(vocabulary.terms, id: \.self) { term in
+                            TermRow(
+                                term: term,
+                                isSelectionMode: isSelectionMode,
+                                isSelected: selectedTerms.contains(term),
+                                onToggleSelection: { toggleTermSelection(term) },
+                                onRemove: { onRemoveTerm(term) }
+                            )
+                        }
+                    }
                 }
             }
-            .listStyle(.plain)
 
             // Footer: term count
+            Divider()
             HStack {
-                Text("\(vocabulary.terms.count) / 100 terms")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
                 Spacer()
+                Text("\(vocabulary.terms.count) / 100 terms")
+                    .font(DS.Typography.tinyLabel)
+                    .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .padding(.horizontal, DS.Spacing.lg)
+            .padding(.vertical, DS.Spacing.sm)
         }
         .onChange(of: vocabulary.id) {
-            isSelectionMode = false
-            selectedTerms.removeAll()
+            exitSelectionMode()
         }
     }
 
-    @ViewBuilder
-    private func termRow(_ term: String) -> some View {
+    // MARK: - Selection Toolbar
+
+    private var selectionToolbar: some View {
         HStack {
-            if isSelectionMode {
-                Image(systemName: selectedTerms.contains(term) ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(selectedTerms.contains(term) ? .blue : .secondary)
-                    .onTapGesture {
-                        if selectedTerms.contains(term) {
-                            selectedTerms.remove(term)
-                        } else {
-                            selectedTerms.insert(term)
-                        }
+            HStack(spacing: DS.Spacing.sm) {
+                ActionButton(
+                    icon: selectedTerms.count == vocabulary.terms.count
+                        ? "square" : "checkmark.square",
+                    text: selectedTerms.count == vocabulary.terms.count
+                        ? "Deselect all" : "Select all"
+                ) {
+                    if selectedTerms.count == vocabulary.terms.count {
+                        selectedTerms.removeAll()
+                    } else {
+                        selectedTerms = Set(vocabulary.terms)
                     }
+                }
+
+                if selectedTerms.count > 0 {
+                    Text("\(selectedTerms.count) selected")
+                        .font(DS.Typography.tinyLabel)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            if selectedTerms.count > 0 {
+                HStack(spacing: 4) {
+                    // Copy to
+                    if !otherVocabularies.isEmpty {
+                        Menu {
+                            ForEach(otherVocabularies) { vocab in
+                                Button(vocab.name) {
+                                    onCopyTerms(Array(selectedTerms), vocab.id)
+                                    exitSelectionMode()
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.system(size: 10))
+                                Text("Copy to")
+                                    .font(.system(size: 10))
+                            }
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: DS.Radius.sm)
+                                    .fill(Color.clear)
+                            )
+                        }
+                        .menuStyle(.borderlessButton)
+
+                        // Move to
+                        Menu {
+                            ForEach(otherVocabularies) { vocab in
+                                Button(vocab.name) {
+                                    onMoveTerms(Array(selectedTerms), vocab.id)
+                                    exitSelectionMode()
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.right.arrow.left")
+                                    .font(.system(size: 10))
+                                Text("Move to")
+                                    .font(.system(size: 10))
+                            }
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                        }
+                        .menuStyle(.borderlessButton)
+                    }
+
+                    // Delete selected
+                    ActionButton(icon: "trash", destructive: true) {
+                        onDeleteTerms(Array(selectedTerms))
+                        exitSelectionMode()
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.vertical, DS.Spacing.sm)
+        .background(DS.Colors.surfaceHover)
+    }
+
+    // MARK: - Helpers
+
+    private func addTerm() {
+        let trimmed = newTerm.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        onAddTerm(trimmed)
+        newTerm = ""
+    }
+
+    private func toggleTermSelection(_ term: String) {
+        if selectedTerms.contains(term) {
+            selectedTerms.remove(term)
+        } else {
+            selectedTerms.insert(term)
+        }
+    }
+
+    private func exitSelectionMode() {
+        isSelectionMode = false
+        selectedTerms.removeAll()
+    }
+}
+
+// MARK: - Term Row
+
+private struct TermRow: View {
+    let term: String
+    let isSelectionMode: Bool
+    let isSelected: Bool
+    let onToggleSelection: () -> Void
+    let onRemove: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        HStack(spacing: DS.Spacing.md) {
+            if isSelectionMode {
+                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 13))
+                    .foregroundStyle(isSelected ? DS.Colors.primary : .secondary)
             }
 
             Text(term)
-                .font(.body)
+                .font(.system(size: 12))
+                .foregroundStyle(.primary)
 
             Spacer()
 
             if !isSelectionMode {
-                Button(action: { onRemoveTerm(term) }) {
-                    Image(systemName: "xmark.circle.fill")
+                Button(action: onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
-                .opacity(0.5)
+                .opacity(isHovering ? 0.8 : 0)
             }
         }
-    }
-
-    private var selectionToolbar: some View {
-        HStack(spacing: 8) {
-            Button(action: { selectedTerms = Set(vocabulary.terms) }) {
-                Image(systemName: "checkmark.square.fill")
-                    .font(.body)
-            }
-            .buttonStyle(.plain)
-            .help("Select all")
-
-            Button(action: { selectedTerms.removeAll() }) {
-                Image(systemName: "square")
-                    .font(.body)
-            }
-            .buttonStyle(.plain)
-            .help("Deselect all")
-
-            if !otherVocabularies.isEmpty {
-                Menu {
-                    ForEach(otherVocabularies) { vocab in
-                        Button(vocab.name) {
-                            onCopyTerms(Array(selectedTerms), vocab.id)
-                        }
-                    }
-                } label: {
-                    Image(systemName: "doc.on.doc")
-                        .font(.body)
-                }
-                .disabled(selectedTerms.isEmpty)
-                .help("Copy to...")
-
-                Menu {
-                    ForEach(otherVocabularies) { vocab in
-                        Button(vocab.name) {
-                            onMoveTerms(Array(selectedTerms), vocab.id)
-                            selectedTerms.removeAll()
-                        }
-                    }
-                } label: {
-                    Image(systemName: "arrow.right.doc.on.clipboard")
-                        .font(.body)
-                }
-                .disabled(selectedTerms.isEmpty)
-                .help("Move to...")
-            }
-
-            Button(action: {
-                onDeleteTerms(Array(selectedTerms))
-                selectedTerms.removeAll()
-            }) {
-                Image(systemName: "trash")
-                    .font(.body)
-                    .foregroundStyle(.red)
-            }
-            .buttonStyle(.plain)
-            .disabled(selectedTerms.isEmpty)
-            .help("Delete selected")
-
-            Button(action: {
-                isSelectionMode = false
-                selectedTerms.removeAll()
-            }) {
-                Image(systemName: "xmark.circle")
-                    .font(.body)
-            }
-            .buttonStyle(.plain)
-            .help("Done")
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.vertical, 7)
+        .background(
+            isSelectionMode && isSelected
+                ? DS.Colors.primarySubtle
+                : isHovering ? DS.Colors.surfaceHover : Color.clear
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if isSelectionMode { onToggleSelection() }
         }
-    }
-
-    private func addTerm() {
-        guard !newTerm.isEmpty else { return }
-        onAddTerm(newTerm)
-        newTerm = ""
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.1)) { isHovering = hovering }
+        }
     }
 }
 
@@ -432,6 +552,8 @@ final class VocabularyManagerViewModel: ObservableObject {
     func createNew() {
         let vocab = vocabularyService.createVocabulary(name: "New Vocabulary", terms: [])
         selectedVocabularyId = vocab.id
+        renamingId = vocab.id
+        editedName = vocab.name
     }
 
     func duplicateSelected() {
@@ -500,38 +622,44 @@ final class VocabularyManagerViewModel: ObservableObject {
     }
 }
 
-// MARK: - Footer for default vocabulary
+// MARK: - Footer
 
-struct VocabularyManagerFooter: View {
+private struct VocabularyManagerFooter: View {
     @ObservedObject var service: VocabularyService
     let vocabularies: [Vocabulary]
 
     var body: some View {
         HStack {
-            Text("Default vocabulary:")
-                .font(.caption)
+            Text("Default vocabulary")
+                .font(DS.Typography.caption)
+                .foregroundStyle(.secondary)
 
-            Picker("", selection: Binding(
-                get: { service.startupMode },
-                set: { service.startupMode = $0 }
-            )) {
-                Text("Last used").tag(VocabularyStartupMode.last)
-                Text("Specific").tag(VocabularyStartupMode.specific)
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 180)
+            Spacer()
 
-            if service.startupMode == .specific {
-                Picker("", selection: Binding(
-                    get: { service.defaultVocabularyId ?? vocabularies.first?.id ?? UUID() },
-                    set: { service.defaultVocabularyId = $0 }
-                )) {
-                    ForEach(vocabularies) { vocab in
-                        Text(vocab.name).tag(vocab.id)
+            HStack(spacing: DS.Spacing.sm) {
+                SegmentedPicker(
+                    items: [("Last used", VocabularyStartupMode.last), ("Specific", VocabularyStartupMode.specific)],
+                    selection: Binding(
+                        get: { service.startupMode },
+                        set: { service.startupMode = $0 }
+                    )
+                )
+                .frame(width: 180)
+
+                if service.startupMode == .specific {
+                    Picker("", selection: Binding(
+                        get: { service.defaultVocabularyId ?? vocabularies.first?.id ?? UUID() },
+                        set: { service.defaultVocabularyId = $0 }
+                    )) {
+                        ForEach(vocabularies) { vocab in
+                            Text(vocab.name).tag(vocab.id)
+                        }
                     }
+                    .frame(width: 140)
                 }
-                .frame(width: 140)
             }
         }
+        .padding(.horizontal, DS.Spacing.lg)
+        .padding(.vertical, DS.Spacing.md)
     }
 }

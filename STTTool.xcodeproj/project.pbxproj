@@ -8,8 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		0614ABE69F9F31C207AED536 /* TranscriptionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */; };
+		0E90A5ED8B4DA9E851671D04 /* VocabularyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 163FB1CAC633B2A772776F87 /* VocabularyService.swift */; };
+		133B8E91ACBD6486DBCC43C2 /* VocabularyManagerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7EAD0630594264D3724A69B /* VocabularyManagerWindow.swift */; };
 		1680AE08EBCBECBE4A10D975 /* FloatingOverlayWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */; };
+		203059DFDFE527A8775D6986 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DA240E05ABAE708B17518FE /* DesignSystem.swift */; };
 		2CFA6935AB10D91C8295D29F /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDD5A1F62444BCFC4FCDDBC /* Constants.swift */; };
+		2DCD00268943F1A6774DB8B9 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0394E64FA9832AEFB509927F /* Vocabulary.swift */; };
 		2E377949EA555C6A1DF89403 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = FEF7DD52198F2F3B3FA513D1 /* Starscream */; };
 		32A8BDC328045268BD2EBEBA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EB21136745D8C317847AD27 /* AppState.swift */; };
 		33F20E3466D983EEB0088012 /* PermissionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FE229AFF0CBAA802621F02A /* PermissionsService.swift */; };
@@ -22,44 +26,59 @@
 		4A05F9DE16D64CE9D0C68A09 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB65FD7A0A5597B2C93BFD2 /* ModelManager.swift */; };
 		4B15C8E658F1FB5D81633E69 /* AudioCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE138D681515D8DDC3094DA /* AudioCaptureService.swift */; };
 		4B6BB6F07C5B0E28CCCE63B6 /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B668F7B93D4B311BA616E11 /* MenuBarViewModel.swift */; };
+		56B18D03AA29C4C610036807 /* ActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 835FD5BBA4BCF04D692A4602 /* ActionButton.swift */; };
 		6284189AFC0E408573F5501C /* TextProcessingPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F44457B8B5758B933549B6 /* TextProcessingPipeline.swift */; };
 		7BAC0C56CAC71BD36E41A4A0 /* DeepgramRESTService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E12BC707F3738C76C52CBE /* DeepgramRESTService.swift */; };
+		8185867CE59B26B6F741C566 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 446DD2EDEC8ADE7E7AB937AC /* MainView.swift */; };
+		852AB989B98DE79A2994AA15 /* PermissionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8B963C0B8CB699A7A0CAFF3 /* PermissionCard.swift */; };
 		922DE89C30C00E4F91DBE130 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125E5228FF052711228F7A35 /* KeychainService.swift */; };
 		9B8BF8688611761FE20E3F01 /* HotKey in Frameworks */ = {isa = PBXBuildFile; productRef = 129A90D8FD8895EAB6900216 /* HotKey */; };
 		AE47929E3419EA8016B71EF3 /* TextInsertionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5257A5A21AA2F79A96D3DB36 /* TextInsertionService.swift */; };
 		B21B9DC0B6F2FEAEC6DA84BB /* TranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9677696947EC8641FCF4526B /* TranscriptionService.swift */; };
+		B6239840A49AE60C9D2C771C /* StatusIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1796A7D79294A992DCD24EAB /* StatusIndicator.swift */; };
 		B670F86EB5749DCD76311674 /* HistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F346D7F85E96FB7D09962F8A /* HistoryService.swift */; };
+		C51CA7DE4CBF14ED6B840985 /* RecordButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34545F671838F54D617C6FA0 /* RecordButton.swift */; };
 		C6FB2332A765B2EA58113749 /* STTToolApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73DE9C7EA7812BD44625BE8F /* STTToolApp.swift */; };
+		C9F18F787532CB590E675B96 /* SegmentedPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3153AD76C364AA5DE66E2D /* SegmentedPicker.swift */; };
+		E8D02D647B859CCB599D64FA /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BB0D21F8AF36FBF2565332C /* StatusBadge.swift */; };
 		F7A022AAA2B9899F98F13636 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F1198EDEB2145A4CB9EAA2 /* SettingsViewModel.swift */; };
 		F7BAC0CE803E350A2B8DE420 /* MenuBarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */; };
 		F92D3494B7A9F88984676C0E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E37DD900D7EA1525E213137 /* SettingsView.swift */; };
 		FF3C1F2D5D1B51015718BC56 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = D9225F84A279DC60013581F5 /* WhisperKit */; };
-		D3E4F5A6B7C8D9E0F1A2B3C4 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* Vocabulary.swift */; };
-		E4F5A6B7C8D9E0F1A2B3C4D5 /* VocabularyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* VocabularyService.swift */; };
-		F5A6B7C8D9E0F1A2B3C4D5E6 /* VocabularyManagerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F6A7B8C9D0E1F2A3B4 /* VocabularyManagerWindow.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0394E64FA9832AEFB509927F /* Vocabulary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vocabulary.swift; sourceTree = "<group>"; };
+		0DA240E05ABAE708B17518FE /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		125E5228FF052711228F7A35 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		163FB1CAC633B2A772776F87 /* VocabularyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyService.swift; sourceTree = "<group>"; };
+		1796A7D79294A992DCD24EAB /* StatusIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusIndicator.swift; sourceTree = "<group>"; };
 		202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingOverlayWindow.swift; sourceTree = "<group>"; };
 		2B668F7B93D4B311BA616E11 /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
+		34545F671838F54D617C6FA0 /* RecordButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordButton.swift; sourceTree = "<group>"; };
 		3E37DD900D7EA1525E213137 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		42E12BC707F3738C76C52CBE /* DeepgramRESTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepgramRESTService.swift; sourceTree = "<group>"; };
+		446DD2EDEC8ADE7E7AB937AC /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionRecord.swift; sourceTree = "<group>"; };
 		5257A5A21AA2F79A96D3DB36 /* TextInsertionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInsertionService.swift; sourceTree = "<group>"; };
 		529B226ED1584A9755D79518 /* HotKeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyService.swift; sourceTree = "<group>"; };
 		5995ABF46F4440EC726AAA17 /* STTTool.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = STTTool.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EB21136745D8C317847AD27 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		6E3153AD76C364AA5DE66E2D /* SegmentedPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentedPicker.swift; sourceTree = "<group>"; };
 		6FE229AFF0CBAA802621F02A /* PermissionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsService.swift; sourceTree = "<group>"; };
 		73DE9C7EA7812BD44625BE8F /* STTToolApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STTToolApp.swift; sourceTree = "<group>"; };
+		7BB0D21F8AF36FBF2565332C /* StatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBadge.swift; sourceTree = "<group>"; };
 		7EB65FD7A0A5597B2C93BFD2 /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelManager.swift; sourceTree = "<group>"; };
+		835FD5BBA4BCF04D692A4602 /* ActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionButton.swift; sourceTree = "<group>"; };
 		83F1198EDEB2145A4CB9EAA2 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		83F44457B8B5758B933549B6 /* TextProcessingPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextProcessingPipeline.swift; sourceTree = "<group>"; };
 		893C43D963FF7204D9ACBDC7 /* STTTool.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = STTTool.entitlements; sourceTree = "<group>"; };
 		9677696947EC8641FCF4526B /* TranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionService.swift; sourceTree = "<group>"; };
 		9A31B4D12A7D3A1B8605B47F /* DeepgramService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepgramService.swift; sourceTree = "<group>"; };
 		AD12A141ED9C300BB169F756 /* ServiceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceContainer.swift; sourceTree = "<group>"; };
+		B8B963C0B8CB699A7A0CAFF3 /* PermissionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionCard.swift; sourceTree = "<group>"; };
 		BFDD5A1F62444BCFC4FCDDBC /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		C7EAD0630594264D3724A69B /* VocabularyManagerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyManagerWindow.swift; sourceTree = "<group>"; };
 		CCE138D681515D8DDC3094DA /* AudioCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureService.swift; sourceTree = "<group>"; };
 		CE0158FA87B86C6BCB7C6E1E /* StartupGuardianView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupGuardianView.swift; sourceTree = "<group>"; };
 		EF5688C9FE9376B725ADB8C8 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
@@ -67,9 +86,6 @@
 		F83D87823A92D1F0DDCDC462 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
 		F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverView.swift; sourceTree = "<group>"; };
 		FE9AB947A95988BFFDEB3EB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* Vocabulary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Vocabulary.swift; sourceTree = "<group>"; };
-		B2C3D4E5F6A7B8C9D0E1F2A3 /* VocabularyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyService.swift; sourceTree = "<group>"; };
-		C3D4E5F6A7B8C9D0E1F2A3B4 /* VocabularyManagerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyManagerWindow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,7 +115,7 @@
 			children = (
 				5EB21136745D8C317847AD27 /* AppState.swift */,
 				4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */,
-				A1B2C3D4E5F6A7B8C9D0E1F2 /* Vocabulary.swift */,
+				0394E64FA9832AEFB509927F /* Vocabulary.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -107,12 +123,15 @@
 		5D12DBD6BC5BDBCB33A089C9 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				0DA240E05ABAE708B17518FE /* DesignSystem.swift */,
 				202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */,
 				EF5688C9FE9376B725ADB8C8 /* HistoryView.swift */,
+				446DD2EDEC8ADE7E7AB937AC /* MainView.swift */,
 				F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */,
 				3E37DD900D7EA1525E213137 /* SettingsView.swift */,
 				CE0158FA87B86C6BCB7C6E1E /* StartupGuardianView.swift */,
-				C3D4E5F6A7B8C9D0E1F2A3B4 /* VocabularyManagerWindow.swift */,
+				C7EAD0630594264D3724A69B /* VocabularyManagerWindow.swift */,
+				9245216B459C3844F2B01327 /* Components */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -141,7 +160,7 @@
 				5257A5A21AA2F79A96D3DB36 /* TextInsertionService.swift */,
 				83F44457B8B5758B933549B6 /* TextProcessingPipeline.swift */,
 				9677696947EC8641FCF4526B /* TranscriptionService.swift */,
-				B2C3D4E5F6A7B8C9D0E1F2A3 /* VocabularyService.swift */,
+				163FB1CAC633B2A772776F87 /* VocabularyService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -152,6 +171,19 @@
 				A52791458BE37FE9ACF8A27A /* STTTool */,
 				029294365DEFC17ECEC3BB6C /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		9245216B459C3844F2B01327 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				835FD5BBA4BCF04D692A4602 /* ActionButton.swift */,
+				B8B963C0B8CB699A7A0CAFF3 /* PermissionCard.swift */,
+				34545F671838F54D617C6FA0 /* RecordButton.swift */,
+				6E3153AD76C364AA5DE66E2D /* SegmentedPicker.swift */,
+				7BB0D21F8AF36FBF2565332C /* StatusBadge.swift */,
+				1796A7D79294A992DCD24EAB /* StatusIndicator.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		93B0C0B05620F4821B10FD28 /* ViewModels */ = {
@@ -248,33 +280,41 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				56B18D03AA29C4C610036807 /* ActionButton.swift in Sources */,
 				32A8BDC328045268BD2EBEBA /* AppState.swift in Sources */,
 				4B15C8E658F1FB5D81633E69 /* AudioCaptureService.swift in Sources */,
 				2CFA6935AB10D91C8295D29F /* Constants.swift in Sources */,
 				7BAC0C56CAC71BD36E41A4A0 /* DeepgramRESTService.swift in Sources */,
 				35629D45E6FC52EED9DC1D45 /* DeepgramService.swift in Sources */,
+				203059DFDFE527A8775D6986 /* DesignSystem.swift in Sources */,
 				1680AE08EBCBECBE4A10D975 /* FloatingOverlayWindow.swift in Sources */,
 				B670F86EB5749DCD76311674 /* HistoryService.swift in Sources */,
 				3DA2E93CE1C079AD714656CD /* HistoryView.swift in Sources */,
 				3A8CBD3FB9DB61B88CE6A98A /* HistoryViewModel.swift in Sources */,
 				40EF01B97E755781061D8BCA /* HotKeyService.swift in Sources */,
 				922DE89C30C00E4F91DBE130 /* KeychainService.swift in Sources */,
+				8185867CE59B26B6F741C566 /* MainView.swift in Sources */,
 				F7BAC0CE803E350A2B8DE420 /* MenuBarPopoverView.swift in Sources */,
 				4B6BB6F07C5B0E28CCCE63B6 /* MenuBarViewModel.swift in Sources */,
 				4A05F9DE16D64CE9D0C68A09 /* ModelManager.swift in Sources */,
+				852AB989B98DE79A2994AA15 /* PermissionCard.swift in Sources */,
 				33F20E3466D983EEB0088012 /* PermissionsService.swift in Sources */,
+				C51CA7DE4CBF14ED6B840985 /* RecordButton.swift in Sources */,
 				C6FB2332A765B2EA58113749 /* STTToolApp.swift in Sources */,
+				C9F18F787532CB590E675B96 /* SegmentedPicker.swift in Sources */,
 				3D50A8B5CDB9A65F09D06C29 /* ServiceContainer.swift in Sources */,
 				F92D3494B7A9F88984676C0E /* SettingsView.swift in Sources */,
 				F7A022AAA2B9899F98F13636 /* SettingsViewModel.swift in Sources */,
 				411510C04C4970F007646A34 /* StartupGuardianView.swift in Sources */,
+				E8D02D647B859CCB599D64FA /* StatusBadge.swift in Sources */,
+				B6239840A49AE60C9D2C771C /* StatusIndicator.swift in Sources */,
 				AE47929E3419EA8016B71EF3 /* TextInsertionService.swift in Sources */,
 				6284189AFC0E408573F5501C /* TextProcessingPipeline.swift in Sources */,
 				0614ABE69F9F31C207AED536 /* TranscriptionRecord.swift in Sources */,
 				B21B9DC0B6F2FEAEC6DA84BB /* TranscriptionService.swift in Sources */,
-				D3E4F5A6B7C8D9E0F1A2B3C4 /* Vocabulary.swift in Sources */,
-				F5A6B7C8D9E0F1A2B3C4D5E6 /* VocabularyManagerWindow.swift in Sources */,
-				E4F5A6B7C8D9E0F1A2B3C4D5 /* VocabularyService.swift in Sources */,
+				2DCD00268943F1A6774DB8B9 /* Vocabulary.swift in Sources */,
+				133B8E91ACBD6486DBCC43C2 /* VocabularyManagerWindow.swift in Sources */,
+				0E90A5ED8B4DA9E851671D04 /* VocabularyService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -350,13 +390,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = STTTool/Resources/STTTool.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = STTTool/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.romodanov.STTTool;
 				SDKROOT = macosx;
 				SWIFT_STRICT_CONCURRENCY = targeted;
@@ -370,13 +410,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = STTTool/Resources/STTTool.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = STTTool/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.romodanov.STTTool;
 				SDKROOT = macosx;
 				SWIFT_STRICT_CONCURRENCY = targeted;

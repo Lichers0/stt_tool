@@ -220,24 +220,22 @@ struct OverlayContentView: View {
             HStack(spacing: 6) {
                 Text(viewModel.isContinueMode ? "a" : "A")
                     .font(.system(.caption, design: .monospaced, weight: .bold))
-                    .foregroundStyle(viewModel.isContinueMode ? .orange : .blue)
+                    .foregroundStyle(viewModel.isContinueMode ? .orange : DS.Colors.primary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(
-                        (viewModel.isContinueMode ? Color.orange : Color.blue).opacity(0.15)
+                        (viewModel.isContinueMode ? Color.orange : DS.Colors.primary).opacity(0.15)
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
 
                 if !viewModel.displayedVocabularyName.isEmpty {
                     Text(viewModel.displayedVocabularyName)
-                        .font(.system(.caption, design: .monospaced))
+                        .font(DS.Typography.monoCaption)
                         .foregroundStyle(.primary)
                         .opacity(blinkOpacity)
                         .onChange(of: viewModel.isReconnecting) { _, reconnecting in
                             if reconnecting {
-                                withAnimation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true)) {
-                                    blinkOpacity = 0.2
-                                }
+                                withAnimation(DS.blink) { blinkOpacity = 0.3 }
                             } else {
                                 withAnimation(.easeInOut(duration: 0.15)) {
                                     blinkOpacity = 1.0
@@ -248,23 +246,28 @@ struct OverlayContentView: View {
 
                 if viewModel.showReturnSymbol {
                     Text("\u{23CE}")
-                        .font(.system(.caption, design: .monospaced))
+                        .font(DS.Typography.monoCaption)
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
                 Text(formatTime(viewModel.timerSeconds))
-                    .font(.system(.caption, design: .monospaced))
+                    .font(DS.Typography.monoCaption)
                     .foregroundStyle(.secondary)
             }
 
             // Transcription text
-            if !viewModel.displayText.isEmpty {
+            if viewModel.displayText.isEmpty {
+                Text("Listening...")
+                    .font(DS.Typography.caption)
+                    .italic()
+                    .foregroundStyle(.secondary.opacity(0.5))
+            } else {
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
                         Text(viewModel.displayText)
-                            .font(.system(.body))
+                            .font(DS.Typography.body)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .id("bottom")
                     }
@@ -275,12 +278,12 @@ struct OverlayContentView: View {
                 .frame(maxHeight: 250)
             }
         }
-        .padding(12)
+        .padding(DS.Spacing.md)
         .frame(width: 400)
         .background(
             VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
     }
 
     private func formatTime(_ seconds: Int) -> String {

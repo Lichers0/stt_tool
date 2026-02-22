@@ -2,191 +2,98 @@ import SwiftUI
 
 struct MenuBarPopoverView: View {
     @ObservedObject var viewModel: MenuBarViewModel
-    @State private var showingHistory = false
-    @State private var showingSettings = false
+    @State private var activeTab: PopoverTab = .main
+    @State private var historyVM: HistoryViewModel
+    @State private var settingsVM: SettingsViewModel
+
+    enum PopoverTab: String, CaseIterable {
+        case main, history, settings
+
+        var label: String {
+            switch self {
+            case .main: "Main"
+            case .history: "History"
+            case .settings: "Settings"
+            }
+        }
+    }
+
+    init(viewModel: MenuBarViewModel) {
+        self.viewModel = viewModel
+        self._historyVM = State(initialValue: HistoryViewModel(
+            historyService: viewModel.services.historyService
+        ))
+        self._settingsVM = State(initialValue: SettingsViewModel(
+            services: viewModel.services,
+            onModelChange: { model in
+                viewModel.reloadModel(name: model)
+            }
+        ))
+    }
 
     var body: some View {
-        VStack(spacing: 12) {
-            headerView
-            statusView
-            recordButton
-            lastTranscriptionView
-            Divider()
-            bottomBar
+        VStack(spacing: 0) {
+            // Tab bar at top
+            tabBar
+                .padding(.horizontal, DS.Spacing.md)
+                .padding(.top, DS.Spacing.md)
+
+            // Tab content — all tabs rendered, only active one visible.
+            // This prevents MenuBarExtra window from collapsing on tab switch.
+            MainView(viewModel: viewModel)
+                .opacity(activeTab == .main ? 1 : 0)
+                .frame(height: activeTab == .main ? nil : 0)
+                .clipped()
+
+            HistoryView(viewModel: historyVM)
+                .opacity(activeTab == .history ? 1 : 0)
+                .frame(height: activeTab == .history ? nil : 0)
+                .clipped()
+
+            SettingsView(viewModel: settingsVM)
+                .opacity(activeTab == .settings ? 1 : 0)
+                .frame(height: activeTab == .settings ? nil : 0)
+                .clipped()
         }
-        .padding(16)
-        .frame(width: 320)
-    }
-
-    // MARK: - Subviews
-
-    private var headerView: some View {
-        HStack {
-            Image(systemName: "mic.and.signal.meter")
-                .font(.title3)
-            Text("STT Tool")
-                .font(.headline)
-            Spacer()
-            modelStatusBadge
-        }
-    }
-
-    @ViewBuilder
-    private var modelStatusBadge: some View {
-        if viewModel.currentEngine == "deepgram" {
-            Text("Deepgram")
-                .font(.caption2)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(.quaternary)
-                .clipShape(Capsule())
-        } else if viewModel.isLoadingModel {
-            HStack(spacing: 4) {
-                ProgressView()
-                    .controlSize(.mini)
-                Text("Loading model...")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+        .frame(width: DS.Layout.popoverWidth)
+        .transaction { $0.animation = nil }
+        .onChange(of: activeTab) { _, newTab in
+            if newTab == .history {
+                historyVM.refresh()
             }
-        } else if viewModel.isModelLoaded {
-            Text(viewModel.services.transcriptionService.currentModelName)
-                .font(.caption2)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(.quaternary)
-                .clipShape(Capsule())
-        } else if let error = viewModel.modelLoadError {
-            Text(error)
-                .font(.caption2)
-                .foregroundStyle(.red)
-                .lineLimit(1)
         }
     }
 
-    private var statusView: some View {
-        HStack {
-            Image(systemName: viewModel.appState.systemImage)
-                .foregroundStyle(stateColor)
-                .symbolEffect(.pulse, isActive: viewModel.appState.isRecording)
-            Text(viewModel.appState.statusText)
-                .font(.subheadline)
-                .foregroundStyle(stateColor)
-            Spacer()
-        }
-    }
+    // MARK: - Tab Bar
 
-    private var recordButton: some View {
-        Button(action: { viewModel.toggleRecording() }) {
-            HStack {
-                Image(systemName: viewModel.appState.isRecording ? "stop.fill" : "mic.fill")
-                Text(viewModel.appState.isRecording ? "Stop Recording" : "Start Recording")
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .controlSize(.large)
-        .buttonStyle(.borderedProminent)
-        .tint(viewModel.appState.isRecording ? .red : .accentColor)
-        .disabled(viewModel.appState == .transcribing || viewModel.appState == .inserting)
-    }
-
-    @ViewBuilder
-    private var lastTranscriptionView: some View {
-        if let record = viewModel.lastTranscription {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Last transcription")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    if let lang = record.language {
-                        Text(lang.uppercased())
-                            .font(.caption2)
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 1)
-                            .background(.quaternary)
-                            .clipShape(Capsule())
-                    }
-                }
-                Text(record.text)
-                    .font(.body)
-                    .lineLimit(4)
-                    .textSelection(.enabled)
-            }
-            .padding(8)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-    }
-
-    private var bottomBar: some View {
-        HStack {
-            Button(action: { showingHistory = true }) {
-                Image(systemName: "clock.arrow.circlepath")
-                    .font(.title3)
-            }
-            .buttonStyle(.plain)
-            .help("History")
-            .popover(isPresented: $showingHistory) {
-                HistoryView(
-                    viewModel: HistoryViewModel(
-                        historyService: viewModel.services.historyService
-                    )
-                )
-            }
-
-            Spacer()
-
-            if viewModel.currentEngine == "deepgram" {
-                Button(action: { VocabularyManagerWindow.showShared() }) {
-                    Image(systemName: "character.book.closed")
-                        .font(.title3)
+    private var tabBar: some View {
+        HStack(spacing: 2) {
+            ForEach(PopoverTab.allCases, id: \.self) { tab in
+                Button {
+                    activeTab = tab
+                } label: {
+                    Text(tab.label)
+                        .font(.system(size: 11, weight: .medium))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 5)
+                        .background(
+                            RoundedRectangle(cornerRadius: DS.Radius.md)
+                                .fill(activeTab == tab
+                                      ? Color(nsColor: .controlBackgroundColor)
+                                      : Color.clear)
+                                .shadow(color: activeTab == tab
+                                        ? .black.opacity(0.06) : .clear,
+                                        radius: 1, y: 1)
+                        )
+                        .foregroundStyle(activeTab == tab ? .primary : .secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Vocabularies")
-
-                Spacer()
             }
-
-            Button(action: { showingSettings = true }) {
-                Image(systemName: "gearshape")
-                    .font(.title3)
-            }
-            .buttonStyle(.plain)
-            .help("Settings")
-            .popover(isPresented: $showingSettings) {
-                SettingsView(
-                    viewModel: SettingsViewModel(
-                        services: viewModel.services,
-                        onModelChange: { [weak viewModel] model in
-                            viewModel?.reloadModel(name: model)
-                        }
-                    )
-                )
-            }
-
-            Spacer()
-
-            Button(action: { NSApplication.shared.terminate(nil) }) {
-                Image(systemName: "power")
-                    .font(.title3)
-            }
-            .buttonStyle(.plain)
-            .help("Quit")
         }
-    }
-
-    private var stateColor: Color {
-        switch viewModel.appState {
-        case .idle:
-            return .secondary
-        case .recording, .streamingRecording:
-            return .red
-        case .transcribing:
-            return .orange
-        case .inserting:
-            return .blue
-        case .error:
-            return .red
-        }
+        .padding(3)
+        .background(
+            RoundedRectangle(cornerRadius: DS.Radius.lg)
+                .fill(DS.Colors.surfaceSubtle.opacity(0.6))
+        )
     }
 }

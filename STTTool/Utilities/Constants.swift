@@ -22,6 +22,7 @@ enum Constants {
     static let deepgramModeKey = "deepgramMode"             // "streaming" | "rest"
     static let vocabularyTermsKey = "vocabularyTerms"       // [String] (legacy, migrated)
     static let modeToggleKeyCodeKey = "modeToggleKeyCode"   // UInt32 (default: Down Arrow = 125)
+    static let cancelKeyCodeKey = "cancelKeyCode"           // UInt32 (default: Escape = 53)
 
     // MARK: - Vocabulary Manager
 
@@ -34,6 +35,7 @@ enum Constants {
     static let defaultEngine = "deepgram"
     static let defaultDeepgramMode = "streaming"
     static let defaultModeToggleKeyCode: UInt32 = 125       // kVK_DownArrow
+    static let defaultCancelKeyCode: UInt32 = 53            // kVK_Escape
 
     // MARK: - Deepgram API
 

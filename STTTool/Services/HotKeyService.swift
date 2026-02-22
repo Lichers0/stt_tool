@@ -6,7 +6,9 @@ final class HotKeyService: HotKeyServiceProtocol {
     private var hotKey: HotKey?
     var onToggle: (() -> Void)?
     var onModeToggle: (() -> Void)?
+    var onCancel: (() -> Void)?
     private var modeToggleMonitor: Any?
+    private var cancelMonitor: Any?
 
     func register() {
         // Default: Cmd+Shift+Space
@@ -55,6 +57,26 @@ final class HotKeyService: HotKeyServiceProtocol {
         if let monitor = modeToggleMonitor {
             NSEvent.removeMonitor(monitor)
             modeToggleMonitor = nil
+        }
+    }
+
+    func registerCancel() {
+        let keyCode = UInt32(
+            UserDefaults.standard.integer(forKey: Constants.cancelKeyCodeKey)
+        )
+        let targetKeyCode = keyCode != 0 ? keyCode : Constants.defaultCancelKeyCode
+
+        cancelMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if UInt32(event.keyCode) == targetKeyCode {
+                self?.onCancel?()
+            }
+        }
+    }
+
+    func unregisterCancel() {
+        if let monitor = cancelMonitor {
+            NSEvent.removeMonitor(monitor)
+            cancelMonitor = nil
         }
     }
 }

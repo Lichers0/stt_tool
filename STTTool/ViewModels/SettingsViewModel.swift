@@ -16,6 +16,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var apiKeyError: String?
     @Published var isValidatingKey = false
     @Published var modeToggleKeyCode: UInt32
+    @Published var cancelKeyCode: UInt32
 
     let availableModels = Constants.availableModels
     let modelDescriptions = Constants.modelDescriptions
@@ -46,6 +47,9 @@ final class SettingsViewModel: ObservableObject {
 
         let savedToggleCode = UInt32(UserDefaults.standard.integer(forKey: Constants.modeToggleKeyCodeKey))
         self.modeToggleKeyCode = savedToggleCode != 0 ? savedToggleCode : Constants.defaultModeToggleKeyCode
+
+        let savedCancelCode = UInt32(UserDefaults.standard.integer(forKey: Constants.cancelKeyCodeKey))
+        self.cancelKeyCode = savedCancelCode != 0 ? savedCancelCode : Constants.defaultCancelKeyCode
     }
 
     func selectModel(_ model: String) {
@@ -104,6 +108,21 @@ final class SettingsViewModel: ObservableObject {
 
     var modeToggleKeyDisplayString: String {
         Self.keyDisplayName(for: modeToggleKeyCode)
+    }
+
+    // MARK: - Cancel Key
+
+    func saveCancelKey() {
+        UserDefaults.standard.set(Int(cancelKeyCode), forKey: Constants.cancelKeyCodeKey)
+    }
+
+    func resetCancelKey() {
+        cancelKeyCode = Constants.defaultCancelKeyCode
+        saveCancelKey()
+    }
+
+    var cancelKeyDisplayString: String {
+        Self.keyDisplayName(for: cancelKeyCode)
     }
 
     // MARK: - Hotkey Management
