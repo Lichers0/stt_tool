@@ -31,8 +31,6 @@ final class MenuBarViewModel: ObservableObject {
 
     // Vocabulary switching
     private var previewedVocabularyId: UUID?
-    private var overlayKeyMonitor: Any?
-    private var overlayGlobalKeyMonitor: Any?
 
     // MARK: - Init
 
@@ -44,6 +42,7 @@ final class MenuBarViewModel: ObservableObject {
 
     /// Call after all permissions are granted to register hotkey and prepare the app.
     func activate() {
+        KeyInterceptor.shared.start()
         setupHotKey()
     }
 
@@ -526,43 +525,33 @@ final class MenuBarViewModel: ObservableObject {
     // MARK: - Vocabulary Switching
 
     private func registerOverlayHotkeys() {
-        // Global monitor captures key events when other apps are focused
-        // (the overlay is a nonActivatingPanel, so focus stays in the target app).
-        overlayGlobalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self else { return }
-            guard self.appState == .streamingRecording else { return }
-
-            switch Int(event.keyCode) {
-            case 123: self.cycleVocabulary(forward: false)
-            case 124: self.cycleVocabulary(forward: true)
-            case 36:  self.confirmVocabularySwitch()
-            default:  break
+        // Left Arrow — previous vocabulary
+        KeyInterceptor.shared.intercept(keyCode: 123) { [weak self] in
+            Task { @MainActor in
+                guard self?.appState == .streamingRecording else { return }
+                self?.cycleVocabulary(forward: false)
             }
         }
-
-        // Local monitor captures events when the app itself is focused.
-        overlayKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self else { return event }
-            guard self.appState == .streamingRecording else { return event }
-
-            switch Int(event.keyCode) {
-            case 123: self.cycleVocabulary(forward: false); return nil
-            case 124: self.cycleVocabulary(forward: true); return nil
-            case 36:  self.confirmVocabularySwitch(); return nil
-            default:  return event
+        // Right Arrow — next vocabulary
+        KeyInterceptor.shared.intercept(keyCode: 124) { [weak self] in
+            Task { @MainActor in
+                guard self?.appState == .streamingRecording else { return }
+                self?.cycleVocabulary(forward: true)
+            }
+        }
+        // Return — confirm vocabulary switch
+        KeyInterceptor.shared.intercept(keyCode: 36) { [weak self] in
+            Task { @MainActor in
+                guard self?.appState == .streamingRecording else { return }
+                self?.confirmVocabularySwitch()
             }
         }
     }
 
     private func unregisterOverlayHotkeys() {
-        if let monitor = overlayKeyMonitor {
-            NSEvent.removeMonitor(monitor)
-            overlayKeyMonitor = nil
-        }
-        if let monitor = overlayGlobalKeyMonitor {
-            NSEvent.removeMonitor(monitor)
-            overlayGlobalKeyMonitor = nil
-        }
+        KeyInterceptor.shared.stopIntercepting(keyCode: 123)
+        KeyInterceptor.shared.stopIntercepting(keyCode: 124)
+        KeyInterceptor.shared.stopIntercepting(keyCode: 36)
     }
 
     private func cycleVocabulary(forward: Bool) {

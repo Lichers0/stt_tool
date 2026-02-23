@@ -22,6 +22,7 @@
 		3D50A8B5CDB9A65F09D06C29 /* ServiceContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD12A141ED9C300BB169F756 /* ServiceContainer.swift */; };
 		3DA2E93CE1C079AD714656CD /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5688C9FE9376B725ADB8C8 /* HistoryView.swift */; };
 		40EF01B97E755781061D8BCA /* HotKeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 529B226ED1584A9755D79518 /* HotKeyService.swift */; };
+		A1B2C3D4E5F60718091A2B3C /* KeyInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6071809A1B2C3D4E5F6 /* KeyInterceptor.swift */; };
 		411510C04C4970F007646A34 /* StartupGuardianView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0158FA87B86C6BCB7C6E1E /* StartupGuardianView.swift */; };
 		4A05F9DE16D64CE9D0C68A09 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB65FD7A0A5597B2C93BFD2 /* ModelManager.swift */; };
 		4B15C8E658F1FB5D81633E69 /* AudioCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE138D681515D8DDC3094DA /* AudioCaptureService.swift */; };
@@ -62,6 +63,7 @@
 		4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionRecord.swift; sourceTree = "<group>"; };
 		5257A5A21AA2F79A96D3DB36 /* TextInsertionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInsertionService.swift; sourceTree = "<group>"; };
 		529B226ED1584A9755D79518 /* HotKeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyService.swift; sourceTree = "<group>"; };
+		D4E5F6071809A1B2C3D4E5F6 /* KeyInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyInterceptor.swift; sourceTree = "<group>"; };
 		5995ABF46F4440EC726AAA17 /* STTTool.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = STTTool.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5EB21136745D8C317847AD27 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		6E3153AD76C364AA5DE66E2D /* SegmentedPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentedPicker.swift; sourceTree = "<group>"; };
@@ -153,6 +155,7 @@
 				9A31B4D12A7D3A1B8605B47F /* DeepgramService.swift */,
 				F346D7F85E96FB7D09962F8A /* HistoryService.swift */,
 				529B226ED1584A9755D79518 /* HotKeyService.swift */,
+				D4E5F6071809A1B2C3D4E5F6 /* KeyInterceptor.swift */,
 				125E5228FF052711228F7A35 /* KeychainService.swift */,
 				7EB65FD7A0A5597B2C93BFD2 /* ModelManager.swift */,
 				6FE229AFF0CBAA802621F02A /* PermissionsService.swift */,
@@ -292,6 +295,7 @@
 				3DA2E93CE1C079AD714656CD /* HistoryView.swift in Sources */,
 				3A8CBD3FB9DB61B88CE6A98A /* HistoryViewModel.swift in Sources */,
 				40EF01B97E755781061D8BCA /* HotKeyService.swift in Sources */,
+				A1B2C3D4E5F60718091A2B3C /* KeyInterceptor.swift in Sources */,
 				922DE89C30C00E4F91DBE130 /* KeychainService.swift in Sources */,
 				8185867CE59B26B6F741C566 /* MainView.swift in Sources */,
 				F7BAC0CE803E350A2B8DE420 /* MenuBarPopoverView.swift in Sources */,
@@ -396,7 +400,7 @@
 				INFOPLIST_FILE = STTTool/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.romodanov.STTTool;
 				SDKROOT = macosx;
 				SWIFT_STRICT_CONCURRENCY = targeted;
@@ -416,7 +420,7 @@
 				INFOPLIST_FILE = STTTool/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.romodanov.STTTool;
 				SDKROOT = macosx;
 				SWIFT_STRICT_CONCURRENCY = targeted;

@@ -7,8 +7,6 @@ final class HotKeyService: HotKeyServiceProtocol {
     var onToggle: (() -> Void)?
     var onModeToggle: (() -> Void)?
     var onCancel: (() -> Void)?
-    private var modeToggleMonitor: Any?
-    private var cancelMonitor: Any?
 
     func register() {
         // Default: Cmd+Shift+Space
@@ -46,18 +44,17 @@ final class HotKeyService: HotKeyServiceProtocol {
         )
         let targetKeyCode = keyCode != 0 ? keyCode : Constants.defaultModeToggleKeyCode
 
-        modeToggleMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if UInt32(event.keyCode) == targetKeyCode {
-                self?.onModeToggle?()
-            }
+        KeyInterceptor.shared.intercept(keyCode: UInt16(targetKeyCode)) { [weak self] in
+            self?.onModeToggle?()
         }
     }
 
     func unregisterModeToggle() {
-        if let monitor = modeToggleMonitor {
-            NSEvent.removeMonitor(monitor)
-            modeToggleMonitor = nil
-        }
+        let keyCode = UInt32(
+            UserDefaults.standard.integer(forKey: Constants.modeToggleKeyCodeKey)
+        )
+        let targetKeyCode = keyCode != 0 ? keyCode : Constants.defaultModeToggleKeyCode
+        KeyInterceptor.shared.stopIntercepting(keyCode: UInt16(targetKeyCode))
     }
 
     func registerCancel() {
@@ -66,17 +63,16 @@ final class HotKeyService: HotKeyServiceProtocol {
         )
         let targetKeyCode = keyCode != 0 ? keyCode : Constants.defaultCancelKeyCode
 
-        cancelMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if UInt32(event.keyCode) == targetKeyCode {
-                self?.onCancel?()
-            }
+        KeyInterceptor.shared.intercept(keyCode: UInt16(targetKeyCode)) { [weak self] in
+            self?.onCancel?()
         }
     }
 
     func unregisterCancel() {
-        if let monitor = cancelMonitor {
-            NSEvent.removeMonitor(monitor)
-            cancelMonitor = nil
-        }
+        let keyCode = UInt32(
+            UserDefaults.standard.integer(forKey: Constants.cancelKeyCodeKey)
+        )
+        let targetKeyCode = keyCode != 0 ? keyCode : Constants.defaultCancelKeyCode
+        KeyInterceptor.shared.stopIntercepting(keyCode: UInt16(targetKeyCode))
     }
 }

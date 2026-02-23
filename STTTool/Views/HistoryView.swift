@@ -69,6 +69,7 @@ struct HistoryView: View {
                     }
                 }
             }
+            .padding(.bottom, DS.Spacing.lg)
         }
         .frame(maxHeight: 340)
     }
