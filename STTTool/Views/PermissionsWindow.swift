@@ -17,8 +17,11 @@ final class PermissionsWindowController {
             return
         }
 
+        // Concrete type needed for @ObservedObject in SwiftUI
+        guard let concreteService = permissionsService as? PermissionsService else { return }
+
         let view = PermissionsSetupView(
-            permissionsService: permissionsService,
+            permissionsService: concreteService,
             keychainService: keychainService,
             onComplete: { [weak self] in
                 self?.close()
@@ -63,14 +66,9 @@ final class PermissionsWindowController {
 // MARK: - SwiftUI View
 
 struct PermissionsSetupView: View {
-    let permissionsService: PermissionsServiceProtocol
+    @ObservedObject var permissionsService: PermissionsService
     let keychainService: KeychainServiceProtocol
     let onComplete: () -> Void
-
-    @State private var micGranted = false
-    @State private var accessibilityGranted = false
-    @State private var accessibilityWaiting = false
-    @State private var keychainStatus: KeychainProbeStatus = .notConfigured
 
     var body: some View {
         VStack(spacing: DS.Spacing.xl) {
@@ -98,13 +96,13 @@ struct PermissionsSetupView: View {
                     index: 1,
                     icon: "mic.fill",
                     title: "Microphone",
-                    description: micGranted
+                    description: permissionsService.isMicrophoneGranted
                         ? "Microphone access granted."
                         : "Required to record your speech.",
-                    granted: micGranted,
+                    granted: permissionsService.isMicrophoneGranted,
                     actionLabel: "Grant Access",
                     action: {
-                        Task { micGranted = await permissionsService.requestMicrophoneAccess() }
+                        Task { _ = await permissionsService.requestMicrophoneAccess() }
                     }
                 )
 
@@ -112,11 +110,11 @@ struct PermissionsSetupView: View {
                     index: 2,
                     icon: "accessibility",
                     title: "Accessibility",
-                    description: accessibilityGranted
+                    description: permissionsService.isAccessibilityGranted
                         ? "Accessibility access granted."
                         : "Required to paste text into other apps.",
-                    granted: accessibilityGranted,
-                    isWaiting: accessibilityWaiting,
+                    granted: permissionsService.isAccessibilityGranted,
+                    isWaiting: permissionsService.isWaitingForAccessibility,
                     actionLabel: "Open Settings",
                     action: {
                         permissionsService.openAccessibilitySettings()
@@ -129,11 +127,10 @@ struct PermissionsSetupView: View {
                     icon: "key.fill",
                     title: "Keychain",
                     description: keychainDescription,
-                    granted: keychainStatus == .accessible,
+                    granted: permissionsService.keychainStatus == .accessible,
                     actionLabel: "Allow Access",
-                    action: keychainStatus == .denied ? {
+                    action: permissionsService.keychainStatus == .denied ? {
                         permissionsService.probeKeychainAccess(using: keychainService)
-                        keychainStatus = permissionsService.keychainStatus
                     } : nil
                 )
             }
@@ -158,30 +155,17 @@ struct PermissionsSetupView: View {
                 )
             }
             .buttonStyle(.plain)
-            .disabled(!micGranted || !accessibilityGranted)
-            .opacity(!micGranted || !accessibilityGranted ? 0.5 : 1.0)
+            .disabled(!permissionsService.isMicrophoneGranted || !permissionsService.isAccessibilityGranted)
+            .opacity(!permissionsService.isMicrophoneGranted || !permissionsService.isAccessibilityGranted ? 0.5 : 1.0)
         }
         .padding(DS.Spacing.xxl)
         .onAppear {
-            micGranted = permissionsService.isMicrophoneGranted
-            accessibilityGranted = permissionsService.isAccessibilityGranted
-            accessibilityWaiting = permissionsService.isWaitingForAccessibility
             permissionsService.probeKeychainAccess(using: keychainService)
-            keychainStatus = permissionsService.keychainStatus
-        }
-        .onChange(of: permissionsService.isAccessibilityGranted) { _, newValue in
-            accessibilityGranted = newValue
-        }
-        .onChange(of: permissionsService.isWaitingForAccessibility) { _, newValue in
-            accessibilityWaiting = newValue
-        }
-        .onChange(of: permissionsService.keychainStatus) { _, newValue in
-            keychainStatus = newValue
         }
     }
 
     private var keychainDescription: String {
-        switch keychainStatus {
+        switch permissionsService.keychainStatus {
         case .accessible: "Deepgram API key accessible."
         case .notConfigured: "Not configured yet — set up in Settings later."
         case .denied: "Access denied. Press Always Allow when prompted."
