@@ -6,18 +6,22 @@ struct PermissionCard: View {
     let title: String
     let description: String
     let granted: Bool
+    var isWaiting: Bool = false
     var actionLabel: String = "Grant"
     var action: (() -> Void)? = nil
 
     var body: some View {
         HStack(alignment: .top, spacing: DS.Spacing.md) {
-            // Status: checkmark or number — fixed 22x22 for both states
+            // Status indicator
             ZStack {
                 if granted {
                     Image(systemName: "checkmark.circle.fill")
                         .resizable()
                         .frame(width: 22, height: 22)
                         .foregroundStyle(.green)
+                } else if isWaiting {
+                    ProgressView()
+                        .controlSize(.small)
                 } else {
                     Circle()
                         .stroke(Color.secondary.opacity(0.3), lineWidth: 1.5)
@@ -41,7 +45,11 @@ struct PermissionCard: View {
                     .font(DS.Typography.caption)
                     .foregroundStyle(.secondary)
 
-                if !granted, let action {
+                if isWaiting && !granted {
+                    Text("Waiting for permission...")
+                        .font(DS.Typography.caption)
+                        .foregroundStyle(.orange)
+                } else if !granted, let action {
                     Button(actionLabel, action: action)
                         .controlSize(.small)
                         .padding(.top, 2)
