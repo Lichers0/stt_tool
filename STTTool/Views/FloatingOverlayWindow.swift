@@ -29,9 +29,9 @@ final class FloatingOverlayWindow: NSPanel {
 
     // MARK: - Public API
 
-    func showForRecording() {
+    func showForRecording(targetApp: NSRunningApplication? = nil) {
         overlayViewModel.reset()
-        positionNearCursor()
+        positionOnScreen(of: targetApp)
         alphaValue = 0
         orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { context in
@@ -100,23 +100,25 @@ final class FloatingOverlayWindow: NSPanel {
         }
     }
 
-    private func positionNearCursor() {
-        if let cursorRect = getCursorPosition() {
-            // Position below the cursor
+    private func positionOnScreen(of targetApp: NSRunningApplication?) {
+        // Try to position below the text cursor of the target app
+        if let app = targetApp, let cursorRect = getCursorPosition(for: app) {
             let x = cursorRect.origin.x
             let y = cursorRect.origin.y - frame.height - 8
             setFrameOrigin(NSPoint(x: x, y: max(y, 40)))
-        } else {
-            // Fallback: center of main screen
-            guard let screen = NSScreen.main else { return }
-            let x = (screen.frame.width - frame.width) / 2
-            let y = screen.frame.height * 0.3
-            setFrameOrigin(NSPoint(x: x, y: y))
+            return
         }
+
+        // Fallback: bottom-center of the screen that contains the target app's window
+        let screen = screenForApp(targetApp) ?? NSScreen.main ?? NSScreen.screens.first
+        guard let screen else { return }
+        let visibleFrame = screen.visibleFrame
+        let x = visibleFrame.midX - frame.width / 2
+        let y = visibleFrame.origin.y + visibleFrame.height * 0.3
+        setFrameOrigin(NSPoint(x: x, y: y))
     }
 
-    private func getCursorPosition() -> NSRect? {
-        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+    private func getCursorPosition(for app: NSRunningApplication) -> NSRect? {
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
 
         var focusedElement: AnyObject?
@@ -144,10 +146,52 @@ final class FloatingOverlayWindow: NSPanel {
             return nil
         }
 
-        // Convert from screen coordinates (top-left origin) to Cocoa coordinates (bottom-left origin)
-        guard let screen = NSScreen.main else { return nil }
-        let cocoaY = screen.frame.height - rect.origin.y - rect.height
+        // AX uses top-left origin; convert to Cocoa bottom-left origin using primary screen height
+        guard let primaryScreen = NSScreen.screens.first else { return nil }
+        let cocoaY = primaryScreen.frame.height - rect.origin.y - rect.height
         return NSRect(x: rect.origin.x, y: cocoaY, width: rect.width, height: rect.height)
+    }
+
+    /// Find the NSScreen that contains the front window of the given app.
+    private func screenForApp(_ app: NSRunningApplication?) -> NSScreen? {
+        guard let app else { return nil }
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+
+        // Try focused window first, then fall back to main window
+        var windowRef: AnyObject?
+        if AXUIElementCopyAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, &windowRef) != .success {
+            AXUIElementCopyAttributeValue(appElement, kAXMainWindowAttribute as CFString, &windowRef)
+        }
+        guard let windowRef else { return nil }
+
+        var positionRef: AnyObject?
+        guard AXUIElementCopyAttributeValue(windowRef as! AXUIElement, kAXPositionAttribute as CFString, &positionRef) == .success else {
+            return nil
+        }
+
+        var position = CGPoint.zero
+        guard AXValueGetValue(positionRef as! AXValue, .cgPoint, &position) else {
+            return nil
+        }
+
+        var sizeRef: AnyObject?
+        guard AXUIElementCopyAttributeValue(windowRef as! AXUIElement, kAXSizeAttribute as CFString, &sizeRef) == .success else {
+            return nil
+        }
+
+        var size = CGSize.zero
+        guard AXValueGetValue(sizeRef as! AXValue, .cgSize, &size) else {
+            return nil
+        }
+
+        // AX uses top-left origin; convert center point to Cocoa coordinates
+        guard let primaryScreen = NSScreen.screens.first else { return nil }
+        let centerX = position.x + size.width / 2
+        let centerY = primaryScreen.frame.height - (position.y + size.height / 2)
+        let cocoaCenter = NSPoint(x: centerX, y: centerY)
+
+        // Find the screen that contains this point
+        return NSScreen.screens.first { $0.frame.contains(cocoaCenter) }
     }
 
     private func updateSize() {

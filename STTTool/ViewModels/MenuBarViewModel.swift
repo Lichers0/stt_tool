@@ -229,7 +229,7 @@ final class MenuBarViewModel: ObservableObject {
         let mode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
         let vocabulary = services.vocabularyService.activeVocabulary?.terms ?? []
 
-        overlay.showForRecording()
+        overlay.showForRecording(targetApp: previousApp)
         overlay.setVocabularyName(services.vocabularyService.activeVocabulary?.name ?? "")
         previewedVocabularyId = nil
         overlay.setPreviewedVocabularyName(nil, isPendingSwitch: false)
