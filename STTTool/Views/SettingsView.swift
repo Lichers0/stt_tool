@@ -91,8 +91,7 @@ struct SettingsView: View {
             sectionLabel("RECORDING SOUNDS")
             SegmentedPicker(
                 items: [
-                    ("Default", "default"),
-                    ("Custom", "custom"),
+                    ("On", "on"),
                     ("Off", "off")
                 ],
                 selection: $viewModel.soundMode

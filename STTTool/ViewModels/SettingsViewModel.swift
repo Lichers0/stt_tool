@@ -52,7 +52,9 @@ final class SettingsViewModel: ObservableObject {
         let savedCancelCode = UInt32(UserDefaults.standard.integer(forKey: Constants.cancelKeyCodeKey))
         self.cancelKeyCode = savedCancelCode != 0 ? savedCancelCode : Constants.defaultCancelKeyCode
 
-        self.soundMode = UserDefaults.standard.string(forKey: Constants.soundModeKey) ?? "default"
+        let saved = UserDefaults.standard.string(forKey: Constants.soundModeKey) ?? "on"
+        // Migrate legacy "default"/"custom" values to "on"
+        self.soundMode = (saved == "off") ? "off" : "on"
     }
 
     func selectModel(_ model: String) {

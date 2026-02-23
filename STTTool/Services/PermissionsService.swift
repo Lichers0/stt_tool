@@ -7,6 +7,7 @@ import Security
 final class PermissionsService: ObservableObject, PermissionsServiceProtocol {
     @Published private(set) var isMicrophoneGranted = false
     @Published private(set) var isAccessibilityGranted = false
+    @Published private(set) var isWaitingForAccessibility = false
     @Published private(set) var keychainStatus: KeychainProbeStatus = .notConfigured
 
     var allRequiredPermissionsGranted: Bool {
@@ -75,9 +76,15 @@ final class PermissionsService: ObservableObject, PermissionsServiceProtocol {
 
     func startAccessibilityPolling() {
         stopAccessibilityPolling()
+        isWaitingForAccessibility = true
         accessibilityTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                self?.isAccessibilityGranted = AXIsProcessTrusted()
+                guard let self else { return }
+                let granted = AXIsProcessTrusted()
+                self.isAccessibilityGranted = granted
+                if granted {
+                    self.stopAccessibilityPolling()
+                }
             }
         }
     }
@@ -85,5 +92,6 @@ final class PermissionsService: ObservableObject, PermissionsServiceProtocol {
     func stopAccessibilityPolling() {
         accessibilityTimer?.invalidate()
         accessibilityTimer = nil
+        isWaitingForAccessibility = false
     }
 }

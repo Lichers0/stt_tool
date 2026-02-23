@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import AVFoundation
 import Combine
 import Foundation
 import SwiftUI
@@ -26,6 +27,7 @@ final class MenuBarViewModel: ObservableObject {
     private var previousFocusedElement: AXUIElement?
     private var previousSelectedTextRange: AXValue?
     private let overlay = FloatingOverlayWindow()
+    private let soundEffectPlayer = SoundEffectPlayer()
     private var recordingTimer: Timer?
     private var recordingSeconds = 0
 
@@ -233,7 +235,6 @@ final class MenuBarViewModel: ObservableObject {
         overlay.setVocabularyName(services.vocabularyService.activeVocabulary?.name ?? "")
         previewedVocabularyId = nil
         overlay.setPreviewedVocabularyName(nil, isPendingSwitch: false)
-        startRecordingTimer()
         registerOverlayHotkeys()
 
         if mode == "streaming" {
@@ -276,14 +277,15 @@ final class MenuBarViewModel: ObservableObject {
                     deepgram?.sendAudioChunk(chunk)
                 }
 
+                overlay.setConnecting(false)
                 appState = .streamingRecording
                 services.hotKeyService.registerModeToggle()
                 services.hotKeyService.registerCancel()
                 playStartSound()
+                startRecordingTimer()
             } catch {
                 appState = .error(error.localizedDescription)
                 overlay.dismissImmediately()
-                stopRecordingTimer()
                 resetToIdleAfterDelay()
             }
         }
@@ -294,14 +296,15 @@ final class MenuBarViewModel: ObservableObject {
             try services.audioCaptureService.startStreaming { _ in
                 // REST mode: ignore chunks, just record audio
             }
+            overlay.setConnecting(false)
             appState = .streamingRecording
             services.hotKeyService.registerModeToggle()
             services.hotKeyService.registerCancel()
             playStartSound()
+            startRecordingTimer()
         } catch {
             appState = .error(error.localizedDescription)
             overlay.dismissImmediately()
-            stopRecordingTimer()
             resetToIdleAfterDelay()
         }
     }
@@ -664,24 +667,18 @@ final class MenuBarViewModel: ObservableObject {
         }
     }
 
-    private var soundMode: String {
-        UserDefaults.standard.string(forKey: Constants.soundModeKey) ?? "default"
+    private var isSoundEnabled: Bool {
+        (UserDefaults.standard.string(forKey: Constants.soundModeKey) ?? "on") != "off"
     }
 
     private func playStartSound() {
-        switch soundMode {
-        case "custom": NSSound.recordStart?.play()
-        case "off":    break
-        default:       NSSound.tink?.play()
-        }
+        guard isSoundEnabled else { return }
+        soundEffectPlayer.play(.recordStart)
     }
 
     private func playStopSound() {
-        switch soundMode {
-        case "custom": NSSound.recordStop?.play()
-        case "off":    break
-        default:       NSSound.pop?.play()
-        }
+        guard isSoundEnabled else { return }
+        soundEffectPlayer.play(.recordStop)
     }
 
     private func samplesToInt16Data(_ samples: [Float]) -> Data {
@@ -782,17 +779,91 @@ final class MenuBarViewModel: ObservableObject {
 // MARK: - NSSound helpers
 
 private extension NSSound {
-    static let tink = NSSound(named: "Tink")
-    static let pop = NSSound(named: "Pop")
     static let basso = NSSound(named: "Basso")
+}
 
-    static let recordStart: NSSound? = {
-        guard let url = Bundle.main.url(forResource: "button-dry-single-voiced-sharp", withExtension: "mp3") else { return nil }
-        return NSSound(contentsOf: url, byReference: true)
-    }()
+private final class SoundEffectPlayer: NSObject, AVAudioPlayerDelegate, @unchecked Sendable {
+    enum Effect: Hashable {
+        case recordStart
+        case recordStop
+    }
 
-    static let recordStop: NSSound? = {
-        guard let url = Bundle.main.url(forResource: "mixkit-software-interface-start-2574", withExtension: "wav") else { return nil }
-        return NSSound(contentsOf: url, byReference: true)
-    }()
+    private var activePlayers: [UUID: AVAudioPlayer] = [:]
+    private let activePlayersLock = NSLock()
+    private let audioDataByEffect: [Effect: Data]
+    private let playbackVolume: Float = 0.35
+    private let releaseTailDelay: TimeInterval = 0.2
+
+    override init() {
+        var loaded: [Effect: Data] = [:]
+
+        if let commonURL = Bundle.main.url(
+            forResource: "button-dry-single-voiced-sharp",
+            withExtension: "mp3"
+        ),
+        let data = try? Data(contentsOf: commonURL) {
+            loaded[.recordStart] = data
+            loaded[.recordStop] = data
+        }
+
+        audioDataByEffect = loaded
+        super.init()
+    }
+
+    func play(_ effect: Effect) {
+        guard let data = audioDataByEffect[effect] else {
+            print("[SoundEffectPlayer] Missing audio data for effect: \(effect)")
+            return
+        }
+
+        do {
+            let player = try AVAudioPlayer(data: data)
+            player.delegate = self
+            player.volume = playbackVolume
+            player.prepareToPlay()
+            let id = UUID()
+            activePlayersLock.lock()
+            activePlayers[id] = player
+            activePlayersLock.unlock()
+            if !player.play() {
+                removePlayer(player)
+            }
+        } catch {
+            print("[SoundEffectPlayer] Failed to play effect \(effect): \(error.localizedDescription)")
+        }
+    }
+
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        scheduleRemoval(player)
+    }
+
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        removePlayer(player)
+    }
+
+    private func scheduleRemoval(_ player: AVAudioPlayer) {
+        activePlayersLock.lock()
+        let playerId = activePlayers.first(where: { $0.value === player })?.key
+        activePlayersLock.unlock()
+        guard let playerId else { return }
+
+        let delay = releaseTailDelay
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            self?.removePlayerByID(playerId)
+        }
+    }
+
+    private func removePlayer(_ player: AVAudioPlayer) {
+        activePlayersLock.lock()
+        defer { activePlayersLock.unlock() }
+        guard let entry = activePlayers.first(where: { $0.value === player }) else { return }
+        activePlayers.removeValue(forKey: entry.key)
+    }
+
+    private func removePlayerByID(_ id: UUID) {
+        activePlayersLock.lock()
+        defer { activePlayersLock.unlock() }
+        activePlayers.removeValue(forKey: id)
+    }
 }

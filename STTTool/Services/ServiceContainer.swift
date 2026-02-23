@@ -62,6 +62,7 @@ enum KeychainProbeStatus {
 protocol PermissionsServiceProtocol: AnyObject {
     var isMicrophoneGranted: Bool { get }
     var isAccessibilityGranted: Bool { get }
+    var isWaitingForAccessibility: Bool { get }
     var keychainStatus: KeychainProbeStatus { get }
     var allRequiredPermissionsGranted: Bool { get }
     func requestMicrophoneAccess() async -> Bool

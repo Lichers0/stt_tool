@@ -68,6 +68,10 @@ final class FloatingOverlayWindow: NSPanel {
         overlayViewModel.isPendingSwitch = isPendingSwitch
     }
 
+    func setConnecting(_ connecting: Bool) {
+        overlayViewModel.isConnecting = connecting
+    }
+
     func setReconnecting(_ reconnecting: Bool) {
         overlayViewModel.isReconnecting = reconnecting
     }
@@ -214,6 +218,7 @@ final class OverlayViewModel: ObservableObject {
     @Published var previewedVocabularyName: String?
     @Published var isPendingSwitch = false
     @Published var isReconnecting = false
+    @Published var isConnecting = true
 
     var displayedVocabularyName: String {
         previewedVocabularyName ?? vocabularyName
@@ -239,6 +244,7 @@ final class OverlayViewModel: ObservableObject {
         previewedVocabularyName = nil
         isPendingSwitch = false
         isReconnecting = false
+        isConnecting = true
     }
 
     var displayText: String {
@@ -258,10 +264,28 @@ struct OverlayContentView: View {
     @ObservedObject var viewModel: OverlayViewModel
     @State private var blinkOpacity: Double = 1.0
 
+    @State private var dotPulse = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Header: mode indicator + vocabulary name + return symbol + timer
+            // Header: status dot + mode indicator + vocabulary name + return symbol + timer
             HStack(spacing: 6) {
+                // Connection status dot
+                Circle()
+                    .fill(viewModel.isConnecting ? Color.yellow : Color.green)
+                    .frame(width: 8, height: 8)
+                    .opacity(viewModel.isConnecting ? (dotPulse ? 1.0 : 0.3) : 1.0)
+                    .animation(
+                        viewModel.isConnecting
+                            ? .easeInOut(duration: 0.6).repeatForever(autoreverses: true)
+                            : .easeInOut(duration: 0.2),
+                        value: viewModel.isConnecting
+                    )
+                    .onChange(of: viewModel.isConnecting) { _, connecting in
+                        dotPulse = connecting
+                    }
+                    .onAppear { dotPulse = viewModel.isConnecting }
+
                 Text(viewModel.isContinueMode ? "a" : "A")
                     .font(.system(.caption, design: .monospaced, weight: .bold))
                     .foregroundStyle(viewModel.isContinueMode ? .orange : DS.Colors.primary)
