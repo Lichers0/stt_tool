@@ -23,6 +23,7 @@ enum Constants {
     static let vocabularyTermsKey = "vocabularyTerms"       // [String] (legacy, migrated)
     static let modeToggleKeyCodeKey = "modeToggleKeyCode"   // UInt32 (default: Down Arrow = 125)
     static let cancelKeyCodeKey = "cancelKeyCode"           // UInt32 (default: Escape = 53)
+    static let soundModeKey = "soundMode"                     // "default" | "custom" | "off"
 
     // MARK: - Vocabulary Manager
 

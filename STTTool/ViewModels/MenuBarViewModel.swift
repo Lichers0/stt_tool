@@ -176,7 +176,7 @@ final class MenuBarViewModel: ObservableObject {
             try services.audioCaptureService.startRecording()
             appState = .recording
             services.hotKeyService.registerCancel()
-            NSSound.tink?.play()
+            playStartSound()
         } catch {
             appState = .error(error.localizedDescription)
             resetToIdleAfterDelay()
@@ -279,7 +279,7 @@ final class MenuBarViewModel: ObservableObject {
                 appState = .streamingRecording
                 services.hotKeyService.registerModeToggle()
                 services.hotKeyService.registerCancel()
-                NSSound.tink?.play()
+                playStartSound()
             } catch {
                 appState = .error(error.localizedDescription)
                 overlay.dismissImmediately()
@@ -297,7 +297,7 @@ final class MenuBarViewModel: ObservableObject {
             appState = .streamingRecording
             services.hotKeyService.registerModeToggle()
             services.hotKeyService.registerCancel()
-            NSSound.tink?.play()
+            playStartSound()
         } catch {
             appState = .error(error.localizedDescription)
             overlay.dismissImmediately()
@@ -464,7 +464,7 @@ final class MenuBarViewModel: ObservableObject {
         if let element = previousFocusedElement,
            insertViaAccessibility(text, into: element) {
             appState = .idle
-            NSSound.pop?.play()
+            playStopSound()
             print("[InsertText] === DONE via Accessibility ===")
             return
         }
@@ -474,7 +474,7 @@ final class MenuBarViewModel: ObservableObject {
         do {
             try await services.textInsertionService.insertText(text)
             appState = .idle
-            NSSound.pop?.play()
+            playStopSound()
             print("[InsertText] === DONE via clipboard paste ===")
         } catch {
             print("[InsertText] ERROR: \(error.localizedDescription)")
@@ -664,6 +664,26 @@ final class MenuBarViewModel: ObservableObject {
         }
     }
 
+    private var soundMode: String {
+        UserDefaults.standard.string(forKey: Constants.soundModeKey) ?? "default"
+    }
+
+    private func playStartSound() {
+        switch soundMode {
+        case "custom": NSSound.recordStart?.play()
+        case "off":    break
+        default:       NSSound.tink?.play()
+        }
+    }
+
+    private func playStopSound() {
+        switch soundMode {
+        case "custom": NSSound.recordStop?.play()
+        case "off":    break
+        default:       NSSound.pop?.play()
+        }
+    }
+
     private func samplesToInt16Data(_ samples: [Float]) -> Data {
         var data = Data(capacity: samples.count * 2)
         for sample in samples {
@@ -765,4 +785,14 @@ private extension NSSound {
     static let tink = NSSound(named: "Tink")
     static let pop = NSSound(named: "Pop")
     static let basso = NSSound(named: "Basso")
+
+    static let recordStart: NSSound? = {
+        guard let url = Bundle.main.url(forResource: "button-dry-single-voiced-sharp", withExtension: "mp3") else { return nil }
+        return NSSound(contentsOf: url, byReference: true)
+    }()
+
+    static let recordStop: NSSound? = {
+        guard let url = Bundle.main.url(forResource: "mixkit-software-interface-start-2574", withExtension: "wav") else { return nil }
+        return NSSound(contentsOf: url, byReference: true)
+    }()
 }

@@ -84,6 +84,22 @@ struct SettingsView: View {
             Text("Switch vocabularies during recording (hardcoded)")
                 .font(DS.Typography.tinyLabel)
                 .foregroundStyle(.secondary)
+
+            Divider()
+
+            // Sound Mode
+            sectionLabel("RECORDING SOUNDS")
+            SegmentedPicker(
+                items: [
+                    ("Default", "default"),
+                    ("Custom", "custom"),
+                    ("Off", "off")
+                ],
+                selection: $viewModel.soundMode
+            )
+            .onChange(of: viewModel.soundMode) { _, newValue in
+                viewModel.setSoundMode(newValue)
+            }
         }
         .padding(.horizontal, DS.Spacing.lg)
         .padding(.top, DS.Spacing.xs)

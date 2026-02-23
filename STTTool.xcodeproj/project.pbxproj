@@ -46,6 +46,8 @@
 		F7BAC0CE803E350A2B8DE420 /* MenuBarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */; };
 		F92D3494B7A9F88984676C0E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E37DD900D7EA1525E213137 /* SettingsView.swift */; };
 		FF3C1F2D5D1B51015718BC56 /* WhisperKit in Frameworks */ = {isa = PBXBuildFile; productRef = D9225F84A279DC60013581F5 /* WhisperKit */; };
+		CC33DD44EE55FF6600112233 /* button-dry-single-voiced-sharp.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF66 /* button-dry-single-voiced-sharp.mp3 */; };
+		DD44EE55FF660011223344AA /* mixkit-software-interface-start-2574.wav in Resources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF660011 /* mixkit-software-interface-start-2574.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -88,7 +90,21 @@
 		F83D87823A92D1F0DDCDC462 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViewModel.swift; sourceTree = "<group>"; };
 		F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarPopoverView.swift; sourceTree = "<group>"; };
 		FE9AB947A95988BFFDEB3EB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF66 /* button-dry-single-voiced-sharp.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "button-dry-single-voiced-sharp.mp3"; sourceTree = "<group>"; };
+		BB22CC33DD44EE55FF660011 /* mixkit-software-interface-start-2574.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "mixkit-software-interface-start-2574.wav"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXResourcesBuildPhase section */
+		EE55FF66001122334455AABB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CC33DD44EE55FF6600112233 /* button-dry-single-voiced-sharp.mp3 in Resources */,
+				DD44EE55FF660011223344AA /* mixkit-software-interface-start-2574.wav in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		772096C53FA4C5457CAA24DD /* Frameworks */ = {
@@ -143,6 +159,8 @@
 			children = (
 				FE9AB947A95988BFFDEB3EB6 /* Info.plist */,
 				893C43D963FF7204D9ACBDC7 /* STTTool.entitlements */,
+				AA11BB22CC33DD44EE55FF66 /* button-dry-single-voiced-sharp.mp3 */,
+				BB22CC33DD44EE55FF660011 /* mixkit-software-interface-start-2574.wav */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -230,6 +248,7 @@
 			buildPhases = (
 				4E98F54B7F216410095383EF /* Sources */,
 				772096C53FA4C5457CAA24DD /* Frameworks */,
+				EE55FF66001122334455AABB /* Resources */,
 			);
 			buildRules = (
 			);
