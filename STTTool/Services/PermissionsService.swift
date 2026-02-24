@@ -47,14 +47,8 @@ final class PermissionsService: ObservableObject, PermissionsServiceProtocol {
     }
 
     func probeKeychainAccess(using keychain: KeychainServiceProtocol) {
-        let result = keychain.loadAPIKey()
-        if result != nil {
-            keychainStatus = .accessible
-            return
-        }
-
-        // loadAPIKey() returns nil for both "no key saved" and "access denied".
-        // Distinguish by checking if the item exists at all.
+        // Lightweight attribute-only check — does NOT request kSecReturnData,
+        // so it won't trigger the system "wants to use your confidential information" dialog.
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "com.romodanov.STTTool",

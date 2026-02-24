@@ -1,40 +1,16 @@
 import SwiftUI
 
-@main
-struct STTToolApp: App {
-    @State private var services = ServiceContainer()
-    @State private var viewModel: MenuBarViewModel?
-    @State private var permissionsReady = false
-    private let permissionsWindow = PermissionsWindowController()
+// MARK: - App Delegate
 
-    var body: some Scene {
-        MenuBarExtra {
-            if let viewModel {
-                if permissionsReady {
-                    MenuBarPopoverView(viewModel: viewModel)
-                } else {
-                    // Minimal view — clicking menu bar icon focuses the permissions window
-                    VStack(spacing: DS.Spacing.md) {
-                        Text("Setup required")
-                            .font(DS.Typography.body)
-                            .foregroundStyle(.secondary)
-                        Button("Open Setup Window") {
-                            permissionsWindow.focus()
-                        }
-                        .controlSize(.small)
-                    }
-                    .padding(DS.Spacing.xl)
-                    .frame(width: 200)
-                }
-            } else {
-                ProgressView("Loading...")
-                    .padding()
-                    .onAppear { initializeApp() }
-            }
-        } label: {
-            Image(systemName: viewModel?.appState.systemImage ?? "mic")
-        }
-        .menuBarExtraStyle(.window)
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
+    let services = ServiceContainer()
+    @Published var viewModel: MenuBarViewModel?
+    @Published var permissionsReady = false
+    let permissionsWindow = PermissionsWindowController()
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        initializeApp()
     }
 
     private func initializeApp() {
@@ -50,10 +26,10 @@ struct STTToolApp: App {
             permissionsWindow.show(
                 permissionsService: services.permissionsService,
                 keychainService: services.keychainService,
-                onComplete: { [vm] in
-                    permissionsReady = true
+                onComplete: { [weak self, vm] in
+                    self?.permissionsReady = true
                     vm.activate()
-                    loadModelIfNeeded(vm: vm)
+                    self?.loadModelIfNeeded(vm: vm)
                 }
             )
         }
@@ -66,5 +42,51 @@ struct STTToolApp: App {
         if engine == "whisperkit" {
             vm.loadModelAtLaunch()
         }
+    }
+}
+
+// MARK: - Menu Bar Content
+
+private struct MenuBarContentView: View {
+    @ObservedObject var appDelegate: AppDelegate
+
+    var body: some View {
+        if let viewModel = appDelegate.viewModel {
+            if appDelegate.permissionsReady {
+                MenuBarPopoverView(viewModel: viewModel)
+            } else {
+                // Minimal view — clicking menu bar icon focuses the permissions window
+                VStack(spacing: DS.Spacing.md) {
+                    Text("Setup required")
+                        .font(DS.Typography.body)
+                        .foregroundStyle(.secondary)
+                    Button("Open Setup Window") {
+                        appDelegate.permissionsWindow.focus()
+                    }
+                    .controlSize(.small)
+                }
+                .padding(DS.Spacing.xl)
+                .frame(width: 200)
+            }
+        } else {
+            ProgressView("Loading...")
+                .padding()
+        }
+    }
+}
+
+// MARK: - App
+
+@main
+struct STTToolApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
+    var body: some Scene {
+        MenuBarExtra {
+            MenuBarContentView(appDelegate: appDelegate)
+        } label: {
+            Image(systemName: appDelegate.viewModel?.appState.systemImage ?? "mic")
+        }
+        .menuBarExtraStyle(.window)
     }
 }

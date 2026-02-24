@@ -44,7 +44,7 @@ final class SettingsViewModel: ObservableObject {
         // Deepgram
         self.selectedEngine = UserDefaults.standard.string(forKey: Constants.deepgramEngineKey) ?? Constants.defaultEngine
         self.deepgramMode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
-        self.hasAPIKey = services.keychainService.loadAPIKey() != nil
+        self.hasAPIKey = services.keychainService.hasAPIKey()
 
         let savedToggleCode = UInt32(UserDefaults.standard.integer(forKey: Constants.modeToggleKeyCodeKey))
         self.modeToggleKeyCode = savedToggleCode != 0 ? savedToggleCode : Constants.defaultModeToggleKeyCode

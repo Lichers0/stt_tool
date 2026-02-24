@@ -128,8 +128,8 @@ struct PermissionsSetupView: View {
                     title: "Keychain",
                     description: keychainDescription,
                     granted: permissionsService.keychainStatus == .accessible,
-                    actionLabel: "Allow Access",
-                    action: permissionsService.keychainStatus == .denied ? {
+                    actionLabel: "Check Access",
+                    action: permissionsService.keychainStatus != .accessible ? {
                         permissionsService.probeKeychainAccess(using: keychainService)
                     } : nil
                 )
@@ -159,9 +159,6 @@ struct PermissionsSetupView: View {
             .opacity(!permissionsService.isMicrophoneGranted || !permissionsService.isAccessibilityGranted ? 0.5 : 1.0)
         }
         .padding(DS.Spacing.xxl)
-        .onAppear {
-            permissionsService.probeKeychainAccess(using: keychainService)
-        }
     }
 
     private var keychainDescription: String {

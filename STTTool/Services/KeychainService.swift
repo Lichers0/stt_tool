@@ -46,6 +46,19 @@ final class KeychainService: KeychainServiceProtocol {
         return String(data: data, encoding: .utf8)
     }
 
+    /// Lightweight existence check — does NOT request data, so it won't trigger
+    /// the system "wants to use your confidential information" dialog.
+    func hasAPIKey() -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
+        ]
+        var item: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        return status == errSecSuccess
+    }
+
     func deleteAPIKey() throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,

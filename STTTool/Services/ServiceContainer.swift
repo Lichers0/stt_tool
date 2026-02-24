@@ -80,6 +80,7 @@ protocol TextProcessingPipelineProtocol: AnyObject, Sendable {
 protocol KeychainServiceProtocol: AnyObject {
     func saveAPIKey(_ key: String) throws
     func loadAPIKey() -> String?
+    func hasAPIKey() -> Bool
     func deleteAPIKey() throws
 }
 
