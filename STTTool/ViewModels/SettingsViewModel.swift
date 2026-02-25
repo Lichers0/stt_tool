@@ -140,10 +140,6 @@ final class SettingsViewModel: ObservableObject {
         updater?.checkForUpdates()
     }
 
-    var canCheckForUpdates: Bool {
-        updater?.canCheckForUpdates ?? false
-    }
-
     // MARK: - Sound Mode
 
     func setSoundMode(_ mode: String) {
