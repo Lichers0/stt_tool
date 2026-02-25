@@ -70,7 +70,7 @@ enum DS {
     // MARK: - Layout
 
     enum Layout {
-        static let popoverWidth: CGFloat = 360
+        static let popoverWidth: CGFloat = 400
         static let iconBoxSize: CGFloat = 32
         static let recordButtonHeight: CGFloat = 44
         static let statusDotSize: CGFloat = 6

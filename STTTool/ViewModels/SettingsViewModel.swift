@@ -143,14 +143,14 @@ final class SettingsViewModel: ObservableObject {
         var parts: [String] = []
         let mods = NSEvent.ModifierFlags(rawValue: UInt(hotKeyModifiers))
 
-        if mods.contains(.control) { parts.append("Ctrl") }
-        if mods.contains(.option) { parts.append("Opt") }
-        if mods.contains(.shift) { parts.append("Shift") }
-        if mods.contains(.command) { parts.append("Cmd") }
+        if mods.contains(.control) { parts.append("⌃") }
+        if mods.contains(.option) { parts.append("⌥") }
+        if mods.contains(.shift) { parts.append("⇧") }
+        if mods.contains(.command) { parts.append("⌘") }
 
         parts.append(Self.keyDisplayName(for: hotKeyKeyCode))
 
-        return parts.joined(separator: " + ")
+        return parts.joined(separator: " ")
     }
 
     func saveHotKey() {
@@ -184,7 +184,7 @@ final class SettingsViewModel: ObservableObject {
         let specialKeys: [UInt32: String] = [
             49: "Space", 36: "Return", 48: "Tab", 51: "Delete",
             53: "Esc", 117: "Fwd Del",
-            126: "Up", 125: "Down", 123: "Left", 124: "Right",
+            126: "↑", 125: "↓", 123: "←", 124: "→",
             115: "Home", 119: "End", 116: "Page Up", 121: "Page Down",
             122: "F1", 120: "F2", 99: "F3", 118: "F4", 96: "F5",
             97: "F6", 98: "F7", 100: "F8", 101: "F9", 109: "F10",

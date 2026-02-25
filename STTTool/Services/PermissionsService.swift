@@ -47,24 +47,20 @@ final class PermissionsService: ObservableObject, PermissionsServiceProtocol {
     }
 
     func probeKeychainAccess(using keychain: KeychainServiceProtocol) {
-        // Lightweight attribute-only check — does NOT request kSecReturnData,
-        // so it won't trigger the system "wants to use your confidential information" dialog.
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.romodanov.STTTool",
-            kSecAttrAccount as String: "deepgram-api-key",
-            kSecReturnAttributes as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &item)
-
-        if status == errSecItemNotFound {
-            keychainStatus = .notConfigured
-        } else if status == errSecSuccess {
+        // Attempt to read the actual key data — this may trigger the system
+        // "wants to use your confidential information" dialog. The user should
+        // press "Always Allow" so subsequent loadAPIKey() calls won't prompt.
+        if keychain.loadAPIKey() != nil {
             keychainStatus = .accessible
-        } else {
+            return
+        }
+
+        // loadAPIKey() returned nil — distinguish "no key" from "access denied"
+        // using a lightweight existence check (no data access, no dialog).
+        if keychain.hasAPIKey() {
             keychainStatus = .denied
+        } else {
+            keychainStatus = .notConfigured
         }
     }
 

@@ -49,56 +49,74 @@ struct SettingsView: View {
 
     // MARK: - General Tab
 
+    @State private var shortcutsExpanded = false
+
     private var generalTab: some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.xl) {
-            // Record Toggle
-            sectionLabel("RECORD TOGGLE")
-            HotKeyRecorderView(viewModel: viewModel)
-
-            Divider()
-
-            // Mode Toggle Key
-            sectionLabel("MODE TOGGLE KEY")
+        VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            // Sound toggle
             HStack {
-                kbdBadge(viewModel.modeToggleKeyDisplayString)
+                Text("Sound")
+                    .font(DS.Typography.caption)
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { viewModel.soundMode == "on" },
+                    set: { viewModel.setSoundMode($0 ? "on" : "off") }
+                ))
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .labelsHidden()
             }
 
             Divider()
 
-            // Cancel Recording
-            sectionLabel("CANCEL RECORDING")
-            CancelKeyRecorderView(viewModel: viewModel)
+            // Keyboard Shortcuts
+            DisclosureGroup(isExpanded: $shortcutsExpanded) {
+                VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                    // Record Toggle
+                    HStack {
+                        shortcutLabel("Record Toggle")
+                        Spacer()
+                        HotKeyRecorderView(viewModel: viewModel)
+                    }
 
-            Divider()
+                    // Cancel Recording
+                    HStack {
+                        shortcutLabel("Cancel Recording")
+                        Spacer()
+                        CancelKeyRecorderView(viewModel: viewModel)
+                    }
 
-            // Vocabulary Switching (read-only)
-            sectionLabel("VOCABULARY SWITCHING")
-            HStack(spacing: DS.Spacing.xs) {
-                kbdBadge("Left")
-                kbdBadge("Right")
-                Text("+")
-                    .font(DS.Typography.tinyLabel)
-                    .foregroundStyle(.secondary)
-                kbdBadge("Enter")
+                    // Mode Toggle Key
+                    HStack {
+                        shortcutLabel("Mode Toggle")
+                        Spacer()
+                        kbdBadge(viewModel.modeToggleKeyDisplayString)
+                    }
+
+                    // Vocabulary Switching (read-only)
+                    HStack {
+                        shortcutLabel("Vocab Switch")
+                        Spacer()
+                        HStack(spacing: DS.Spacing.xs) {
+                            kbdBadge("←")
+                            kbdBadge("→")
+                            Text("+")
+                                .font(DS.Typography.tinyLabel)
+                                .foregroundStyle(.secondary)
+                            kbdBadge("Enter")
+                        }
+                    }
+                }
+                .padding(.top, DS.Spacing.sm)
+            } label: {
+                HStack(spacing: DS.Spacing.sm) {
+                    Image(systemName: "keyboard")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                    Text("Keyboard Shortcuts")
+                }
             }
-            Text("Switch vocabularies during recording (hardcoded)")
-                .font(DS.Typography.tinyLabel)
-                .foregroundStyle(.secondary)
-
-            Divider()
-
-            // Sound Mode
-            sectionLabel("RECORDING SOUNDS")
-            SegmentedPicker(
-                items: [
-                    ("On", "on"),
-                    ("Off", "off")
-                ],
-                selection: $viewModel.soundMode
-            )
-            .onChange(of: viewModel.soundMode) { _, newValue in
-                viewModel.setSoundMode(newValue)
-            }
+            .font(DS.Typography.caption)
         }
         .padding(.horizontal, DS.Spacing.lg)
         .padding(.top, DS.Spacing.xs)
@@ -317,6 +335,12 @@ struct SettingsView: View {
 
     // MARK: - Helpers
 
+    private func shortcutLabel(_ text: String) -> some View {
+        Text(text)
+            .font(DS.Typography.caption)
+            .foregroundStyle(.primary)
+    }
+
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
             .font(DS.Typography.tinyLabel)
@@ -350,7 +374,7 @@ private struct HotKeyRecorderView: View {
             Button(action: toggleRecording) {
                 Text(isRecording ? "Type shortcut..." : viewModel.hotKeyDisplayString)
                     .font(DS.Typography.monoCaption)
-                    .frame(minWidth: 120)
+                    .frame(minWidth: 100)
                     .padding(.horizontal, DS.Spacing.sm)
                     .padding(.vertical, DS.Spacing.xs)
                     .background(isRecording
@@ -366,7 +390,7 @@ private struct HotKeyRecorderView: View {
             .buttonStyle(.plain)
 
             if !isRecording {
-                ActionButton(icon: "arrow.counterclockwise", text: "Reset") {
+                ActionButton(icon: "arrow.counterclockwise") {
                     viewModel.resetHotKey()
                 }
             }
@@ -421,7 +445,7 @@ private struct CancelKeyRecorderView: View {
             Button(action: toggleRecording) {
                 Text(isRecording ? "Press a key..." : viewModel.cancelKeyDisplayString)
                     .font(DS.Typography.monoCaption)
-                    .frame(minWidth: 120)
+                    .frame(minWidth: 100)
                     .padding(.horizontal, DS.Spacing.sm)
                     .padding(.vertical, DS.Spacing.xs)
                     .background(isRecording
@@ -437,7 +461,7 @@ private struct CancelKeyRecorderView: View {
             .buttonStyle(.plain)
 
             if !isRecording {
-                ActionButton(icon: "arrow.counterclockwise", text: "Reset") {
+                ActionButton(icon: "arrow.counterclockwise") {
                     viewModel.resetCancelKey()
                 }
             }
