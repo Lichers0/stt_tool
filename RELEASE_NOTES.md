@@ -1,0 +1,3 @@
+- Added auto-updates via Sparkle
+- Added "Check for Updates" button in Settings
+- Fixed permissions window layout

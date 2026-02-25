@@ -84,7 +84,7 @@ jobs:
             "build/${{ env.APP_NAME }}.zip" \
             --repo "${{ env.RELEASES_REPO }}" \
             --title "${{ env.APP_NAME }} ${{ steps.version.outputs.version }}" \
-            --notes "Release ${{ steps.version.outputs.version }}"
+            --notes-file RELEASE_NOTES.md
 
       - name: Update appcast.xml
         env:
@@ -95,6 +95,7 @@ jobs:
           FILE_SIZE="${{ steps.sparkle_sign.outputs.file_size }}"
           DOWNLOAD_URL="https://github.com/${{ env.RELEASES_REPO }}/releases/download/${{ github.ref_name }}/${{ env.APP_NAME }}.zip"
           PUB_DATE=$(date -u +"%a, %d %b %Y %H:%M:%S %z")
+          NOTES_FILE="${{ github.workspace }}/RELEASE_NOTES.md"
 
           # Clone public repo
           git clone "https://x-access-token:${{ secrets.RELEASES_PAT }}@github.com/${{ env.RELEASES_REPO }}.git" public-repo
@@ -103,10 +104,17 @@ jobs:
           # Insert new item before </channel> using python
           python3 -c "
           import sys
+
+          # Read release notes and convert to HTML
+          with open('${NOTES_FILE}', 'r') as f:
+              lines = [l.strip() for l in f if l.strip()]
+          html_notes = '<ul>' + ''.join(f'<li>{l.lstrip(\"- \")}</li>' for l in lines) + '</ul>'
+
           item = '''        <item>
                   <title>Version ${VERSION}</title>
                   <sparkle:version>${VERSION}</sparkle:version>
                   <pubDate>${PUB_DATE}</pubDate>
+                  <description><![CDATA[''' + html_notes + ''']]></description>
                   <enclosure
                       url=\"${DOWNLOAD_URL}\"
                       ${SIGNATURE}
