@@ -30,10 +30,10 @@ final class PermissionsWindowController {
         )
 
         let hostingView = NSHostingView(rootView: view)
-        hostingView.setFrameSize(NSSize(width: 400, height: 380))
+        hostingView.setFrameSize(NSSize(width: 400, height: 480))
 
         let w = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 380),
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 480),
             styleMask: [.titled],
             backing: .buffered,
             defer: false
