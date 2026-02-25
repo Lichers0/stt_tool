@@ -134,7 +134,7 @@ final class MenuBarViewModel: ObservableObject {
             let mode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
             if mode == "streaming" {
                 nonisolated(unsafe) let deepgram = services.deepgramService
-                deepgram.disconnect()
+                deepgram.cancelStreaming()
             }
         } else {
             _ = services.audioCaptureService.stopRecording()

@@ -121,6 +121,7 @@ protocol DeepgramServiceProtocol: AnyObject {
     func sendAudioChunk(_ data: Data)
     func sendFinalize()
     func stopStreaming() async -> String
+    func cancelStreaming()
     func disconnect()
 }
 

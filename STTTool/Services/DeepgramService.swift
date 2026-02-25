@@ -159,6 +159,27 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
         return finalText + " " + interimText
     }
 
+    // MARK: - Cancel Streaming (keep connection alive)
+
+    func cancelStreaming() {
+        guard state == .streaming else { return }
+        print("[Deepgram] cancelStreaming, keeping connection alive")
+        chunkCount = 0
+        state = .idle
+
+        // Flush server-side buffer
+        socket?.write(string: "{\"type\":\"Finalize\"}")
+
+        startKeepAliveTimer()
+        startTTLTimer()
+
+        // Discard accumulated text
+        lock.lock()
+        accumulatedText = ""
+        latestInterimText = ""
+        lock.unlock()
+    }
+
     // MARK: - Disconnect
 
     func disconnect() {
