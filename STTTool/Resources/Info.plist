@@ -25,6 +25,6 @@
     <key>SUFeedURL</key>
     <string>https://raw.githubusercontent.com/Lichers0/stt-tool-releases/main/appcast.xml</string>
     <key>SUPublicEDKey</key>
-    <string>PLACEHOLDER_ED25519_PUBLIC_KEY</string>
+    <string>qkPqMwCCddIiFyMEsvyvu+AKGhLRzSCAT9TfNLhgYYs=</string>
 </dict>
 </plist>
