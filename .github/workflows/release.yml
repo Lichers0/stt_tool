@@ -50,14 +50,24 @@ jobs:
       - name: Sign update with Sparkle
         id: sparkle_sign
         run: |
-          # Download Sparkle tools
-          SPARKLE_VERSION="2.5.2"
+          # Download Sparkle tools (2.9.0 supports 32-byte seed keys)
+          SPARKLE_VERSION="2.9.0"
           curl -L "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz" -o sparkle.tar.xz
           mkdir sparkle-tools
           tar -xf sparkle.tar.xz -C sparkle-tools
+          xattr -cr sparkle-tools/
+
+          # Write private key to temp file (no trailing newline)
+          KEY_FILE=$(mktemp)
+          printf '%s' "${{ secrets.SPARKLE_PRIVATE_KEY }}" > "$KEY_FILE"
 
           # Sign the zip
-          SIGN_OUTPUT=$(echo "${{ secrets.SPARKLE_PRIVATE_KEY }}" | ./sparkle-tools/bin/sign_update "build/${{ env.APP_NAME }}.zip" --ed-key-file -)
+          SIGN_OUTPUT=$(./sparkle-tools/bin/sign_update "build/${{ env.APP_NAME }}.zip" --ed-key-file "$KEY_FILE" 2>&1) || {
+            echo "sign_update failed with: $SIGN_OUTPUT"
+            rm -f "$KEY_FILE"
+            exit 1
+          }
+          rm -f "$KEY_FILE"
           echo "signature=${SIGN_OUTPUT}" >> "$GITHUB_OUTPUT"
 
           # Get file size
@@ -68,6 +78,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASES_PAT }}
         run: |
+          # Delete existing release if retrying
+          gh release delete "${{ github.ref_name }}" --repo "${{ env.RELEASES_REPO }}" --yes 2>/dev/null || true
           gh release create "${{ github.ref_name }}" \
             "build/${{ env.APP_NAME }}.zip" \
             --repo "${{ env.RELEASES_REPO }}" \
@@ -88,21 +100,27 @@ jobs:
           git clone "https://x-access-token:${{ secrets.RELEASES_PAT }}@github.com/${{ env.RELEASES_REPO }}.git" public-repo
           cd public-repo
 
-          # Build new item XML
-          NEW_ITEM="            <item>
-                      <title>Version ${VERSION}</title>
-                      <sparkle:version>${VERSION}</sparkle:version>
-                      <pubDate>${PUB_DATE}</pubDate>
-                      <enclosure
-                          url=\"${DOWNLOAD_URL}\"
-                          ${SIGNATURE}
-                          type=\"application/octet-stream\"
-                          sparkle:version=\"${VERSION}\"
-                      />
-                  </item>"
-
-          # Insert before </channel>
-          sed -i '' "s|</channel>|${NEW_ITEM}\n        </channel>|" appcast.xml
+          # Insert new item before </channel> using python
+          python3 -c "
+          import sys
+          item = '''        <item>
+                  <title>Version ${VERSION}</title>
+                  <sparkle:version>${VERSION}</sparkle:version>
+                  <pubDate>${PUB_DATE}</pubDate>
+                  <enclosure
+                      url=\"${DOWNLOAD_URL}\"
+                      ${SIGNATURE}
+                      type=\"application/octet-stream\"
+                      sparkle:version=\"${VERSION}\"
+                  />
+              </item>
+          '''
+          with open('appcast.xml', 'r') as f:
+              content = f.read()
+          content = content.replace('</channel>', item + '    </channel>')
+          with open('appcast.xml', 'w') as f:
+              f.write(content)
+          "
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

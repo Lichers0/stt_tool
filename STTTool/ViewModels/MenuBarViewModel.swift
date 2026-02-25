@@ -779,7 +779,7 @@ final class MenuBarViewModel: ObservableObject {
 // MARK: - NSSound helpers
 
 private extension NSSound {
-    static let basso = NSSound(named: "Basso")
+    nonisolated(unsafe) static let basso = NSSound(named: "Basso")
 }
 
 private final class SoundEffectPlayer: NSObject, AVAudioPlayerDelegate, @unchecked Sendable {
