@@ -1,4 +1,5 @@
 import SwiftUI
+import Sparkle
 
 // MARK: - App Delegate
 
@@ -8,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     @Published var viewModel: MenuBarViewModel?
     @Published var permissionsReady = false
     let permissionsWindow = PermissionsWindowController()
+    let updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         initializeApp()

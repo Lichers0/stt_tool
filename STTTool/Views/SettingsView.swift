@@ -67,6 +67,18 @@ struct SettingsView: View {
                 .labelsHidden()
             }
 
+            // Check for Updates
+            HStack {
+                Text("Check for Updates")
+                    .font(DS.Typography.caption)
+                Spacer()
+                Button("Check") {
+                    viewModel.checkForUpdates()
+                }
+                .controlSize(.small)
+                .disabled(!viewModel.canCheckForUpdates)
+            }
+
             Divider()
 
             // Keyboard Shortcuts

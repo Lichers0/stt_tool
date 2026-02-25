@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		01902E7014C9DA1E133348FB /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 12E1D0334E942525B28F4E45 /* Sparkle */; };
 		05EC01A5FF6B0C5EC0A3709E /* PermissionsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = E94E685C051CE1B0C89512A0 /* PermissionsWindow.swift */; };
 		0614ABE69F9F31C207AED536 /* TranscriptionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */; };
 		0E90A5ED8B4DA9E851671D04 /* VocabularyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 163FB1CAC633B2A772776F87 /* VocabularyService.swift */; };
@@ -102,6 +103,7 @@
 				FF3C1F2D5D1B51015718BC56 /* WhisperKit in Frameworks */,
 				9B8BF8688611761FE20E3F01 /* HotKey in Frameworks */,
 				2E377949EA555C6A1DF89403 /* Starscream in Frameworks */,
+				01902E7014C9DA1E133348FB /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -247,6 +249,7 @@
 				D9225F84A279DC60013581F5 /* WhisperKit */,
 				129A90D8FD8895EAB6900216 /* HotKey */,
 				FEF7DD52198F2F3B3FA513D1 /* Starscream */,
+				12E1D0334E942525B28F4E45 /* Sparkle */,
 			);
 			productName = STTTool;
 			productReference = 5995ABF46F4440EC726AAA17 /* STTTool.app */;
@@ -273,6 +276,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				D212FF7242311C47947C6A66 /* XCRemoteSwiftPackageReference "HotKey" */,
+				910E4866D0E37B243D8F0AD2 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				D63E9C7D35AFE81463222DDB /* XCRemoteSwiftPackageReference "Starscream" */,
 				56289E6ED5B362892C3EF6D9 /* XCRemoteSwiftPackageReference "WhisperKit" */,
 			);
@@ -535,6 +539,14 @@
 				minimumVersion = 0.9.0;
 			};
 		};
+		910E4866D0E37B243D8F0AD2 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.0;
+			};
+		};
 		D212FF7242311C47947C6A66 /* XCRemoteSwiftPackageReference "HotKey" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/soffes/HotKey.git";
@@ -558,6 +570,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D212FF7242311C47947C6A66 /* XCRemoteSwiftPackageReference "HotKey" */;
 			productName = HotKey;
+		};
+		12E1D0334E942525B28F4E45 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 910E4866D0E37B243D8F0AD2 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 		D9225F84A279DC60013581F5 /* WhisperKit */ = {
 			isa = XCSwiftPackageProductDependency;

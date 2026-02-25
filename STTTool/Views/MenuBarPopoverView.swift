@@ -23,12 +23,16 @@ struct MenuBarPopoverView: View {
         self._historyVM = State(initialValue: HistoryViewModel(
             historyService: viewModel.services.historyService
         ))
-        self._settingsVM = State(initialValue: SettingsViewModel(
+        let settings = SettingsViewModel(
             services: viewModel.services,
             onModelChange: { model in
                 viewModel.reloadModel(name: model)
             }
-        ))
+        )
+        if let appDelegate = NSApp.delegate as? AppDelegate {
+            settings.updater = appDelegate.updaterController.updater
+        }
+        self._settingsVM = State(initialValue: settings)
     }
 
     var body: some View {

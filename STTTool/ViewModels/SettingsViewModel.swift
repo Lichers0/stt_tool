@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Carbon.HIToolbox
+import Sparkle
 
 @MainActor
 final class SettingsViewModel: ObservableObject {
@@ -18,6 +19,9 @@ final class SettingsViewModel: ObservableObject {
     @Published var modeToggleKeyCode: UInt32
     @Published var cancelKeyCode: UInt32
     @Published var soundMode: String
+
+    // Sparkle updater
+    var updater: SPUUpdater?
 
     let availableModels = Constants.availableModels
     let modelDescriptions = Constants.modelDescriptions
@@ -128,6 +132,16 @@ final class SettingsViewModel: ObservableObject {
 
     var cancelKeyDisplayString: String {
         Self.keyDisplayName(for: cancelKeyCode)
+    }
+
+    // MARK: - Updates
+
+    func checkForUpdates() {
+        updater?.checkForUpdates()
+    }
+
+    var canCheckForUpdates: Bool {
+        updater?.canCheckForUpdates ?? false
     }
 
     // MARK: - Sound Mode
