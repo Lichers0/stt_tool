@@ -215,11 +215,7 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
 
     func disconnect() {
         // Clean up any pending finalize wait
-        lock.lock()
-        let pendingFinalize = finalizeContinuation
-        finalizeContinuation = nil
-        lock.unlock()
-        pendingFinalize?.resume()
+        consumeFinalizeContinuation()?.resume()
 
         stopKeepAliveTimer()
         stopTTLTimer()
@@ -252,6 +248,7 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
             print("[Deepgram] WebSocket disconnected: \(reason) (code: \(code))")
             state = .disconnected
             isConnected = false
+            consumeFinalizeContinuation()?.resume()
 
         case .text(let text):
             handleMessage(text)
@@ -263,12 +260,7 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
             print("[Deepgram] WebSocket error: \(String(describing: error))")
             state = .disconnected
             isConnected = false
-            // Clean up finalize continuation
-            lock.lock()
-            let pendingFinalizeError = finalizeContinuation
-            finalizeContinuation = nil
-            lock.unlock()
-            pendingFinalizeError?.resume()
+            consumeFinalizeContinuation()?.resume()
             if let continuation = connectContinuation {
                 connectContinuation = nil
                 continuation.resume(throwing: error ?? DeepgramError.serverError("Connection failed"))
@@ -282,12 +274,7 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
             print("[Deepgram] WebSocket cancelled")
             state = .disconnected
             isConnected = false
-            // Clean up finalize continuation
-            lock.lock()
-            let pendingFinalizeCancelled = finalizeContinuation
-            finalizeContinuation = nil
-            lock.unlock()
-            pendingFinalizeCancelled?.resume()
+            consumeFinalizeContinuation()?.resume()
 
         case .viabilityChanged(let viable):
             print("[Deepgram] viability changed: \(viable)")
@@ -299,12 +286,7 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
             print("[Deepgram] peer closed")
             state = .disconnected
             isConnected = false
-            // Clean up finalize continuation
-            lock.lock()
-            let pendingFinalizePeerClosed = finalizeContinuation
-            finalizeContinuation = nil
-            lock.unlock()
-            pendingFinalizePeerClosed?.resume()
+            consumeFinalizeContinuation()?.resume()
 
         case .pong:
             break
