@@ -267,6 +267,17 @@ final class MenuBarViewModel: ObservableObject {
             }
         }
 
+        // Start audio capture immediately and buffer chunks while connecting
+        do {
+            services.audioCaptureService.startBuffering()
+            try services.audioCaptureService.startStreaming { _ in }
+        } catch {
+            appState = .error(error.localizedDescription)
+            overlay.dismissImmediately()
+            resetToIdleAfterDelay()
+            return
+        }
+
         Task {
             do {
                 if !deepgram.isConnected {
@@ -274,7 +285,11 @@ final class MenuBarViewModel: ObservableObject {
                 }
                 deepgram.startStreaming(preserveAccumulatedText: false)
 
-                try services.audioCaptureService.startStreaming { [weak deepgram] chunk in
+                // Flush buffered audio and switch to direct sending
+                services.audioCaptureService.flushBuffer { [weak deepgram] chunk in
+                    deepgram?.sendAudioChunk(chunk)
+                }
+                services.audioCaptureService.replaceChunkCallback { [weak deepgram] chunk in
                     deepgram?.sendAudioChunk(chunk)
                 }
 
@@ -285,6 +300,7 @@ final class MenuBarViewModel: ObservableObject {
                 playStartSound()
                 startRecordingTimer()
             } catch {
+                _ = services.audioCaptureService.stopStreamingAndGetSamples()
                 appState = .error(error.localizedDescription)
                 overlay.dismissImmediately()
                 resetToIdleAfterDelay()
