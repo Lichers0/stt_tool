@@ -16,6 +16,9 @@ Package.resolved
 *.swp
 *~
 
+# Project
+TODO.md
+
 # Xcode project internals
 *.xcodeproj/xcuserdata/
 *.xcodeproj/project.xcworkspace/xcuserdata/
