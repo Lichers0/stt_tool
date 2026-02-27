@@ -163,13 +163,14 @@ final class AudioCaptureService: AudioCaptureServiceProtocol {
     }
 
     func stopStreamingAndGetSamples() -> [Float] {
+        let samples = stopRecording()    // removeTap first — no more chunks from audio thread
         chunkCallback = nil
         isStreamingMode = false
         bufferLock.lock()
         isBuffering = false
         audioBuffer.removeAll()
         bufferLock.unlock()
-        return stopRecording()
+        return samples
     }
 
     // MARK: - Buffering
