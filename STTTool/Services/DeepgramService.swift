@@ -47,7 +47,7 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
             URLQueryItem(name: "model", value: Constants.deepgramModel),
             URLQueryItem(name: "language", value: "multi"),
             URLQueryItem(name: "smart_format", value: "true"),
-            URLQueryItem(name: "endpointing", value: "100"),
+            URLQueryItem(name: "endpointing", value: "300"),
             URLQueryItem(name: "interim_results", value: "true"),
             URLQueryItem(name: "encoding", value: "linear16"),
             URLQueryItem(name: "sample_rate", value: "16000"),
