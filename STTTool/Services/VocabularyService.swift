@@ -45,6 +45,20 @@ final class VocabularyService: VocabularyServiceProtocol, ObservableObject {
         defaults.set(id.uuidString, forKey: Constants.activeVocabularyIdKey)
     }
 
+    func resolveVocabularyForSession() {
+        switch startupMode {
+        case .specific:
+            // Reset to default vocabulary at the start of each session
+            if let defaultId = defaultVocabularyId,
+               vocabularies.contains(where: { $0.id == defaultId }) {
+                setActiveVocabulary(defaultId)
+            }
+        case .last:
+            // Keep current activeVocabularyId (last used)
+            break
+        }
+    }
+
     // MARK: - CRUD
 
     @discardableResult
@@ -64,16 +78,27 @@ final class VocabularyService: VocabularyServiceProtocol, ObservableObject {
 
     func deleteVocabulary(_ id: UUID) {
         vocabularies.removeAll { $0.id == id }
-        if activeVocabularyId == id {
-            activeVocabularyId = vocabularies.sorted(by: { $0.sortOrder < $1.sortOrder }).first?.id
-            if let newId = activeVocabularyId {
-                defaults.set(newId.uuidString, forKey: Constants.activeVocabularyIdKey)
-            }
-        }
+
         // Ensure at least one vocabulary exists
         if vocabularies.isEmpty {
             createVocabulary(name: "General")
         }
+
+        let fallbackId = vocabularies.sorted(by: { $0.sortOrder < $1.sortOrder }).first?.id
+
+        // Reset active vocabulary if deleted
+        if activeVocabularyId == id {
+            activeVocabularyId = defaultVocabularyId ?? fallbackId
+            if let newId = activeVocabularyId {
+                defaults.set(newId.uuidString, forKey: Constants.activeVocabularyIdKey)
+            }
+        }
+
+        // Reset default vocabulary if deleted
+        if defaultVocabularyId == id {
+            defaultVocabularyId = fallbackId
+        }
+
         save()
     }
 
@@ -161,7 +186,22 @@ final class VocabularyService: VocabularyServiceProtocol, ObservableObject {
             return VocabularyStartupMode(rawValue: raw) ?? .last
         }
         set {
+            objectWillChange.send()
             defaults.set(newValue.rawValue, forKey: Constants.vocabularyStartupModeKey)
+
+            switch newValue {
+            case .specific:
+                // Switching to Default mode — activate the default vocabulary
+                if let defaultId = defaultVocabularyId {
+                    setActiveVocabulary(defaultId)
+                }
+            case .last:
+                // Switching to Last Used — current active becomes "last used"
+                // (sync from default so the dot stays correct)
+                if let defaultId = defaultVocabularyId {
+                    setActiveVocabulary(defaultId)
+                }
+            }
         }
     }
 
@@ -171,10 +211,16 @@ final class VocabularyService: VocabularyServiceProtocol, ObservableObject {
             return UUID(uuidString: str)
         }
         set {
+            objectWillChange.send()
             if let id = newValue {
                 defaults.set(id.uuidString, forKey: Constants.defaultVocabularyIdKey)
             } else {
                 defaults.removeObject(forKey: Constants.defaultVocabularyIdKey)
+            }
+
+            // If in Default mode, update active vocabulary to match
+            if startupMode == .specific, let id = newValue {
+                setActiveVocabulary(id)
             }
         }
     }
@@ -195,16 +241,33 @@ final class VocabularyService: VocabularyServiceProtocol, ObservableObject {
     }
 
     private func resolveActiveId() -> UUID? {
-        if startupMode == .specific, let defaultId = defaultVocabularyId,
-           vocabularies.contains(where: { $0.id == defaultId }) {
-            return defaultId
+        let fallbackId = vocabularies.sorted(by: { $0.sortOrder < $1.sortOrder }).first?.id
+
+        switch startupMode {
+        case .specific:
+            // Use the designated default vocabulary
+            if let defaultId = defaultVocabularyId,
+               vocabularies.contains(where: { $0.id == defaultId }) {
+                return defaultId
+            }
+            // Default vocabulary missing — fallback to first
+            defaultVocabularyId = fallbackId
+            return fallbackId
+
+        case .last:
+            // Use the last active vocabulary
+            if let savedStr = defaults.string(forKey: Constants.activeVocabularyIdKey),
+               let savedId = UUID(uuidString: savedStr),
+               vocabularies.contains(where: { $0.id == savedId }) {
+                return savedId
+            }
+            // Last used vocabulary missing — fallback to default, then first
+            if let defaultId = defaultVocabularyId,
+               vocabularies.contains(where: { $0.id == defaultId }) {
+                return defaultId
+            }
+            return fallbackId
         }
-        if let savedStr = defaults.string(forKey: Constants.activeVocabularyIdKey),
-           let savedId = UUID(uuidString: savedStr),
-           vocabularies.contains(where: { $0.id == savedId }) {
-            return savedId
-        }
-        return vocabularies.sorted(by: { $0.sortOrder < $1.sortOrder }).first?.id
     }
 
     // MARK: - Migration
@@ -221,6 +284,7 @@ final class VocabularyService: VocabularyServiceProtocol, ObservableObject {
             if let data = try? JSONEncoder().encode([general]) {
                 defaults.set(data, forKey: Constants.vocabulariesKey)
                 defaults.set(general.id.uuidString, forKey: Constants.activeVocabularyIdKey)
+                defaults.set(general.id.uuidString, forKey: Constants.defaultVocabularyIdKey)
             }
             defaults.removeObject(forKey: Constants.vocabularyTermsKey)
         } else {
@@ -229,6 +293,7 @@ final class VocabularyService: VocabularyServiceProtocol, ObservableObject {
             if let data = try? JSONEncoder().encode([general]) {
                 defaults.set(data, forKey: Constants.vocabulariesKey)
                 defaults.set(general.id.uuidString, forKey: Constants.activeVocabularyIdKey)
+                defaults.set(general.id.uuidString, forKey: Constants.defaultVocabularyIdKey)
             }
         }
     }

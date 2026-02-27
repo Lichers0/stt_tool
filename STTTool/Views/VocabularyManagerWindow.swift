@@ -82,7 +82,7 @@ struct VocabularyManagerView: View {
                         VocabularySidebarRow(
                             vocabulary: vocab,
                             isSelected: vocab.id == viewModel.selectedVocabularyId,
-                            isActive: vocab.id == viewModel.activeVocabularyId,
+                            isActive: vocab.id == viewModel.indicatedVocabularyId,
                             isEditing: viewModel.renamingId == vocab.id,
                             editedName: $viewModel.editedName,
                             onSelect: {
@@ -513,6 +513,17 @@ final class VocabularyManagerViewModel: ObservableObject {
         vocabularyService.activeVocabularyId
     }
 
+    /// Vocabulary that will be active on next recording session start
+    var indicatedVocabularyId: UUID? {
+        switch vocabularyService.startupMode {
+        case .specific:
+            return vocabularyService.defaultVocabularyId
+                ?? vocabularyService.vocabularies.sorted(by: { $0.sortOrder < $1.sortOrder }).first?.id
+        case .last:
+            return vocabularyService.activeVocabularyId
+        }
+    }
+
     var selectedVocabulary: Vocabulary? {
         guard let id = selectedVocabularyId else { return nil }
         return vocabularyService.vocabularies.first { $0.id == id }
@@ -628,36 +639,36 @@ private struct VocabularyManagerFooter: View {
     @ObservedObject var service: VocabularyService
     let vocabularies: [Vocabulary]
 
+    private var isDefaultMode: Bool { service.startupMode == .specific }
+
     var body: some View {
-        HStack {
-            Text("Default vocabulary")
+        HStack(spacing: DS.Spacing.md) {
+            Text("On startup use")
                 .font(DS.Typography.caption)
                 .foregroundStyle(.secondary)
 
-            Spacer()
-
-            HStack(spacing: DS.Spacing.sm) {
-                SegmentedPicker(
-                    items: [("Last used", VocabularyStartupMode.last), ("Specific", VocabularyStartupMode.specific)],
-                    selection: Binding(
-                        get: { service.startupMode },
-                        set: { service.startupMode = $0 }
-                    )
-                )
-                .frame(width: 180)
-
-                if service.startupMode == .specific {
-                    Picker("", selection: Binding(
-                        get: { service.defaultVocabularyId ?? vocabularies.first?.id ?? UUID() },
-                        set: { service.defaultVocabularyId = $0 }
-                    )) {
-                        ForEach(vocabularies) { vocab in
-                            Text(vocab.name).tag(vocab.id)
-                        }
-                    }
-                    .frame(width: 140)
+            Picker("", selection: Binding(
+                get: { service.defaultVocabularyId ?? vocabularies.first?.id ?? UUID() },
+                set: { service.defaultVocabularyId = $0 }
+            )) {
+                ForEach(vocabularies) { vocab in
+                    Text(vocab.name).tag(vocab.id)
                 }
             }
+            .frame(width: 140)
+            .disabled(!isDefaultMode)
+            .opacity(isDefaultMode ? 1.0 : 0.5)
+
+            Spacer()
+
+            SegmentedPicker(
+                items: [("Last used", VocabularyStartupMode.last), ("Default", VocabularyStartupMode.specific)],
+                selection: Binding(
+                    get: { service.startupMode },
+                    set: { service.startupMode = $0 }
+                )
+            )
+            .frame(width: 180)
         }
         .padding(.horizontal, DS.Spacing.lg)
         .padding(.vertical, DS.Spacing.md)

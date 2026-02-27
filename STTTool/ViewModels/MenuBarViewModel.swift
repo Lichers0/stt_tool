@@ -229,6 +229,7 @@ final class MenuBarViewModel: ObservableObject {
 
     private func startDeepgramRecording(apiKey: String) {
         let mode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
+        services.vocabularyService.resolveVocabularyForSession()
         let vocabulary = services.vocabularyService.activeVocabulary?.terms ?? []
 
         overlay.showForRecording(targetApp: previousApp)
@@ -588,6 +589,7 @@ final class MenuBarViewModel: ObservableObject {
 
         guard let apiKey = services.keychainService.loadAPIKey() else { return }
 
+        overlay.setVocabularyName(newVocab.name)
         overlay.setReconnecting(true)
         overlay.setPreviewedVocabularyName(nil, isPendingSwitch: false)
 

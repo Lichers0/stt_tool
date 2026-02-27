@@ -96,6 +96,7 @@ protocol VocabularyServiceProtocol: AnyObject {
     var startupMode: VocabularyStartupMode { get set }
     var defaultVocabularyId: UUID? { get set }
     func setActiveVocabulary(_ id: UUID)
+    func resolveVocabularyForSession()
     @discardableResult func createVocabulary(name: String, terms: [String]) -> Vocabulary
     func updateVocabulary(_ vocabulary: Vocabulary)
     func deleteVocabulary(_ id: UUID)

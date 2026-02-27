@@ -105,97 +105,53 @@ final class FloatingOverlayWindow: NSPanel {
     }
 
     private func positionOnScreen(of targetApp: NSRunningApplication?) {
-        // Try to position below the text cursor of the target app
-        if let app = targetApp, let cursorRect = getCursorPosition(for: app) {
-            let x = cursorRect.origin.x
-            let y = cursorRect.origin.y - frame.height - 8
-            setFrameOrigin(NSPoint(x: x, y: max(y, 40)))
-            return
-        }
-
-        // Fallback: bottom-center of the screen that contains the target app's window
         let screen = screenForApp(targetApp) ?? NSScreen.main ?? NSScreen.screens.first
         guard let screen else { return }
         let visibleFrame = screen.visibleFrame
         let x = visibleFrame.midX - frame.width / 2
-        let y = visibleFrame.origin.y + visibleFrame.height * 0.3
+        let y = visibleFrame.origin.y + 40
         setFrameOrigin(NSPoint(x: x, y: y))
     }
 
-    private func getCursorPosition(for app: NSRunningApplication) -> NSRect? {
-        let appElement = AXUIElementCreateApplication(app.processIdentifier)
-
-        var focusedElement: AnyObject?
-        guard AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success else {
-            return nil
-        }
-
-        var rangeValue: AnyObject?
-        guard AXUIElementCopyAttributeValue(focusedElement as! AXUIElement, kAXSelectedTextRangeAttribute as CFString, &rangeValue) == .success else {
-            return nil
-        }
-
-        var boundsValue: AnyObject?
-        guard AXUIElementCopyParameterizedAttributeValue(
-            focusedElement as! AXUIElement,
-            kAXBoundsForRangeParameterizedAttribute as CFString,
-            rangeValue!,
-            &boundsValue
-        ) == .success else {
-            return nil
-        }
-
-        var rect = CGRect.zero
-        guard AXValueGetValue(boundsValue as! AXValue, .cgRect, &rect) else {
-            return nil
-        }
-
-        // AX uses top-left origin; convert to Cocoa bottom-left origin using primary screen height
-        guard let primaryScreen = NSScreen.screens.first else { return nil }
-        let cocoaY = primaryScreen.frame.height - rect.origin.y - rect.height
-        return NSRect(x: rect.origin.x, y: cocoaY, width: rect.width, height: rect.height)
-    }
-
-    /// Find the NSScreen that contains the front window of the given app.
+    /// Find the NSScreen that contains the front window of the given app
+    /// using CGWindowList (does not require Accessibility permissions).
     private func screenForApp(_ app: NSRunningApplication?) -> NSScreen? {
         guard let app else { return nil }
-        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        let pid = app.processIdentifier
 
-        // Try focused window first, then fall back to main window
-        var windowRef: AnyObject?
-        if AXUIElementCopyAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, &windowRef) != .success {
-            AXUIElementCopyAttributeValue(appElement, kAXMainWindowAttribute as CFString, &windowRef)
-        }
-        guard let windowRef else { return nil }
-
-        var positionRef: AnyObject?
-        guard AXUIElementCopyAttributeValue(windowRef as! AXUIElement, kAXPositionAttribute as CFString, &positionRef) == .success else {
+        guard let windowList = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID
+        ) as? [[CFString: Any]] else {
             return nil
         }
 
-        var position = CGPoint.zero
-        guard AXValueGetValue(positionRef as! AXValue, .cgPoint, &position) else {
-            return nil
+        // Find the first on-screen window belonging to the target app
+        for entry in windowList {
+            guard let ownerPID = entry[kCGWindowOwnerPID] as? Int32,
+                  ownerPID == pid,
+                  let bounds = entry[kCGWindowBounds] else {
+                continue
+            }
+
+            var quartzRect = CGRect.zero
+            // swiftlint:disable:next force_cast
+            let boundsDict = bounds as! CFDictionary
+            guard CGRectMakeWithDictionaryRepresentation(boundsDict, &quartzRect) else {
+                continue
+            }
+
+            // Quartz uses top-left origin; convert center to Cocoa (bottom-left origin)
+            guard let primaryScreen = NSScreen.screens.first else { return nil }
+            let centerX = quartzRect.midX
+            let centerY = primaryScreen.frame.height - quartzRect.midY
+            let cocoaCenter = NSPoint(x: centerX, y: centerY)
+
+            if let screen = NSScreen.screens.first(where: { $0.frame.contains(cocoaCenter) }) {
+                return screen
+            }
         }
 
-        var sizeRef: AnyObject?
-        guard AXUIElementCopyAttributeValue(windowRef as! AXUIElement, kAXSizeAttribute as CFString, &sizeRef) == .success else {
-            return nil
-        }
-
-        var size = CGSize.zero
-        guard AXValueGetValue(sizeRef as! AXValue, .cgSize, &size) else {
-            return nil
-        }
-
-        // AX uses top-left origin; convert center point to Cocoa coordinates
-        guard let primaryScreen = NSScreen.screens.first else { return nil }
-        let centerX = position.x + size.width / 2
-        let centerY = primaryScreen.frame.height - (position.y + size.height / 2)
-        let cocoaCenter = NSPoint(x: centerX, y: centerY)
-
-        // Find the screen that contains this point
-        return NSScreen.screens.first { $0.frame.contains(cocoaCenter) }
+        return nil
     }
 
     private func updateSize() {
@@ -274,17 +230,25 @@ struct OverlayContentView: View {
                 Circle()
                     .fill(viewModel.isConnecting ? Color.yellow : Color.green)
                     .frame(width: 8, height: 8)
-                    .opacity(viewModel.isConnecting ? (dotPulse ? 1.0 : 0.3) : 1.0)
-                    .animation(
-                        viewModel.isConnecting
-                            ? .easeInOut(duration: 0.6).repeatForever(autoreverses: true)
-                            : .easeInOut(duration: 0.2),
-                        value: viewModel.isConnecting
-                    )
+                    .opacity(dotPulse ? (viewModel.isConnecting ? 0.3 : 1.0) : 1.0)
                     .onChange(of: viewModel.isConnecting) { _, connecting in
-                        dotPulse = connecting
+                        if connecting {
+                            withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                                dotPulse = true
+                            }
+                        } else {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                dotPulse = false
+                            }
+                        }
                     }
-                    .onAppear { dotPulse = viewModel.isConnecting }
+                    .onAppear {
+                        if viewModel.isConnecting {
+                            withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                                dotPulse = true
+                            }
+                        }
+                    }
 
                 Text(viewModel.isContinueMode ? "a" : "A")
                     .font(.system(.caption, design: .monospaced, weight: .bold))
