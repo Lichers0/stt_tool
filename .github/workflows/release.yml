@@ -7,7 +7,7 @@ on:
 
 env:
   APP_NAME: STTTool
-  RELEASES_REPO: Lichers0/stt-tool-releases
+  RELEASES_REPO: Lichers0/homebrew-stt-tool-releases
 
 jobs:
   build-and-release:
