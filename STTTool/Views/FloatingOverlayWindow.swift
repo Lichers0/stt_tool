@@ -162,9 +162,15 @@ final class FloatingOverlayWindow: NSPanel {
         let screen = screenForApp(targetApp) ?? NSScreen.main ?? NSScreen.screens.first
         guard let screen else { return }
         let visibleFrame = screen.visibleFrame
-        let x = visibleFrame.midX - frame.width / 2
+        let maxWindowHeight = visibleFrame.height * 0.5
+        let headerAndPadding: CGFloat = 50
+        overlayViewModel.maxTextHeight = maxWindowHeight - headerAndPadding
+
+        let width: CGFloat = 400
+        let height: CGFloat = 60
+        let x = visibleFrame.midX - width / 2
         let y = visibleFrame.origin.y + 40
-        setFrameOrigin(NSPoint(x: x, y: y))
+        setFrame(NSRect(x: x, y: y, width: width, height: height), display: false)
     }
 
     /// Find the NSScreen that contains the front window of the given app
@@ -211,8 +217,9 @@ final class FloatingOverlayWindow: NSPanel {
     private func updateSize() {
         let fittingSize = hostingView.fittingSize
         let width: CGFloat = 400
-        let height = min(max(fittingSize.height, 60), 300)
-        setContentSize(NSSize(width: width, height: height))
+        let height = max(fittingSize.height, 60)
+        let bottomY = frame.origin.y
+        setFrame(NSRect(x: frame.origin.x, y: bottomY, width: width, height: height), display: true)
     }
 }
 
@@ -245,6 +252,7 @@ final class OverlayViewModel: ObservableObject {
     @Published var isReconnecting = false
     @Published var isConnecting = true
     @Published var isInterimBlocked = false
+    @Published var maxTextHeight: CGFloat = 250
     @Published var removingSegmentId: UUID?
 
     var displayedVocabularyName: String {
@@ -482,7 +490,7 @@ struct OverlayContentView: View {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
             }
-            .frame(maxHeight: 250)
+            .frame(maxHeight: viewModel.maxTextHeight)
         }
     }
 
