@@ -2,12 +2,13 @@ import Foundation
 
 // MARK: - Service Protocols
 
-protocol AudioCaptureServiceProtocol: AnyObject {
+protocol AudioCaptureServiceProtocol: AnyObject, Sendable {
     var isRecording: Bool { get }
     func startRecording() throws
     func stopRecording() -> [Float]
     func startStreaming(onChunk: @escaping (Data) -> Void) throws
     func stopStreamingAndGetSamples() -> [Float]
+    func drainLastChunkAndStopStreaming() async -> [Float]
     func startBuffering()
     func flushBuffer(to callback: (Data) -> Void)
     func replaceChunkCallback(_ callback: @escaping (Data) -> Void)

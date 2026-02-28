@@ -1,7 +1,7 @@
 @preconcurrency import AVFoundation
 import Foundation
 
-final class AudioCaptureService: AudioCaptureServiceProtocol {
+final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendable {
     private let audioEngine = AVAudioEngine()
     private var samples: [Float] = []
     private var recordingStartTime: Date?
@@ -11,6 +11,7 @@ final class AudioCaptureService: AudioCaptureServiceProtocol {
     private var isBuffering = false
     private var audioBuffer: [Data] = []
     private let bufferLock = NSLock()
+    private var drainSemaphore: DispatchSemaphore?
 
     private(set) var isRecording = false
 
@@ -139,8 +140,11 @@ final class AudioCaptureService: AudioCaptureServiceProtocol {
                     self.bufferLock.unlock()
                 } else {
                     let callback = self.chunkCallback
+                    let sem = self.drainSemaphore
+                    if sem != nil { self.drainSemaphore = nil }
                     self.bufferLock.unlock()
                     callback?(data)
+                    sem?.signal()
                 }
 
                 // Also accumulate float32 samples for fallback/duration tracking
@@ -169,8 +173,33 @@ final class AudioCaptureService: AudioCaptureServiceProtocol {
         bufferLock.lock()
         isBuffering = false
         audioBuffer.removeAll()
+        drainSemaphore = nil
         bufferLock.unlock()
         return samples
+    }
+
+    func drainLastChunkAndStopStreaming() async -> [Float] {
+        guard isRecording, isStreamingMode else { return stopStreamingAndGetSamples() }
+
+        let semaphore = DispatchSemaphore(value: 0)
+        setDrainSemaphore(semaphore)
+
+        // Wait for next audio callback (sends last chunk) or safety timeout
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            DispatchQueue.global().async {
+                _ = semaphore.wait(timeout: .now() + 0.3)
+                continuation.resume()
+            }
+        }
+
+        setDrainSemaphore(nil)
+        return stopStreamingAndGetSamples()
+    }
+
+    private func setDrainSemaphore(_ semaphore: DispatchSemaphore?) {
+        bufferLock.lock()
+        drainSemaphore = semaphore
+        bufferLock.unlock()
     }
 
     // MARK: - Buffering

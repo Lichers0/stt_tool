@@ -347,21 +347,22 @@ final class MenuBarViewModel: ObservableObject {
     }
 
     private func stopDeepgramStreaming() {
-        let samples = services.audioCaptureService.stopStreamingAndGetSamples()
-        let durationSeconds = Double(samples.count) / 16000.0
-
-        guard durationSeconds >= Constants.minimumRecordingDuration else {
-            appState = .error("Recording too short")
-            overlay.dismissImmediately()
-            NSSound.basso?.play()
-            resetToIdleAfterDelay()
-            return
-        }
-
         appState = .transcribing
 
         nonisolated(unsafe) let deepgram = services.deepgramService
         Task {
+            // Drain last audio buffer before stopping (wait for one more callback cycle)
+            let samples = await services.audioCaptureService.drainLastChunkAndStopStreaming()
+            let durationSeconds = Double(samples.count) / 16000.0
+
+            guard durationSeconds >= Constants.minimumRecordingDuration else {
+                appState = .error("Recording too short")
+                overlay.dismissImmediately()
+                NSSound.basso?.play()
+                resetToIdleAfterDelay()
+                return
+            }
+
             var text = await deepgram.stopStreaming()
             text = await services.textProcessingPipeline.process(text)
 
