@@ -119,6 +119,13 @@ final class FloatingOverlayWindow: NSPanel {
         return removed
     }
 
+    @discardableResult
+    func appendSpace() -> Bool {
+        let added = overlayViewModel.appendSpace()
+        updateSize()
+        return added
+    }
+
     var overlayFinalText: String {
         overlayViewModel.finalText
     }
@@ -327,6 +334,20 @@ final class OverlayViewModel: ObservableObject {
                 type: lastSegment.type
             )
         }
+        return true
+    }
+
+    /// Appends a space to the last segment. Returns false if no segment or already ends with space.
+    @discardableResult
+    func appendSpace() -> Bool {
+        guard !finalSegments.isEmpty else { return false }
+        let lastSegment = finalSegments[finalSegments.count - 1]
+        guard !lastSegment.text.hasSuffix(" ") else { return false }
+
+        finalSegments[finalSegments.count - 1] = TextSegment(
+            text: lastSegment.text + " ",
+            type: lastSegment.type
+        )
         return true
     }
 
