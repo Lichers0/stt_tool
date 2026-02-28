@@ -76,6 +76,7 @@ struct SettingsView: View {
                     viewModel.checkForUpdates()
                 }
                 .controlSize(.small)
+                .disabled(!viewModel.canCheckForUpdates)
             }
 
             Divider()

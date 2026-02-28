@@ -21,7 +21,13 @@ final class SettingsViewModel: ObservableObject {
     @Published var soundMode: String
 
     // Sparkle updater
-    var updater: SPUUpdater?
+    var updater: SPUUpdater? {
+        didSet {
+            updater?.publisher(for: \.canCheckForUpdates)
+                .assign(to: &$canCheckForUpdates)
+        }
+    }
+    @Published var canCheckForUpdates = false
 
     let availableModels = Constants.availableModels
     let modelDescriptions = Constants.modelDescriptions
@@ -137,6 +143,8 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Updates
 
     func checkForUpdates() {
+        // Activate app so Sparkle windows appear above other apps (LSUIElement=true)
+        NSApp.activate(ignoringOtherApps: true)
         updater?.checkForUpdates()
     }
 

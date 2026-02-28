@@ -58,6 +58,13 @@ struct MenuBarPopoverView: View {
                 .opacity(activeTab == .settings ? 1 : 0)
                 .frame(height: activeTab == .settings ? nil : 0)
                 .clipped()
+
+            // Version label
+            Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
+                .font(DS.Typography.tinyLabel)
+                .foregroundStyle(.quaternary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, DS.Spacing.sm)
         }
         .frame(width: DS.Layout.popoverWidth)
         .transaction { $0.animation = nil }

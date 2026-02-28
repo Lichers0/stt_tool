@@ -26,5 +26,7 @@
     <string>https://raw.githubusercontent.com/Lichers0/stt-tool-releases/main/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string>qkPqMwCCddIiFyMEsvyvu+AKGhLRzSCAT9TfNLhgYYs=</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
 </dict>
 </plist>
