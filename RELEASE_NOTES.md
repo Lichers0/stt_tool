@@ -1,1 +1,3 @@
-- Bug fixes
+- Fix Sparkle update check not visible in menu bar app
+- Enable automatic update checks on launch
+- Show app version in popover
