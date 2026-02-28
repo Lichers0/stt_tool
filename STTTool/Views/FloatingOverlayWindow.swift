@@ -88,6 +88,17 @@ final class FloatingOverlayWindow: NSPanel {
         return removed
     }
 
+    /// Final transcript text with correct segment ordering (including pastes).
+    /// Mirrors DeepgramService.getResultText logic but uses overlay's ordered segments.
+    var finalTranscriptText: String {
+        let final = overlayViewModel.finalText
+        let interim = overlayViewModel.interimText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if interim.isEmpty { return final }
+        if final.isEmpty { return interim }
+        if final.hasSuffix(interim) { return final }
+        return final + " " + interim
+    }
+
     func showFinalAndDismiss() {
         overlayViewModel.interimText = ""
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
@@ -211,9 +222,15 @@ final class OverlayViewModel: ObservableObject {
     }
 
     func appendFinalText(_ text: String) {
-        let needsSpace = !finalSegments.isEmpty && !(finalSegments.last?.text.hasSuffix(" ") ?? true)
+        // Insert before any trailing pasted segments so dictated text
+        // appears before pastes that were added while it was still interim.
+        var insertIndex = finalSegments.count
+        while insertIndex > 0 && finalSegments[insertIndex - 1].type == .pasted {
+            insertIndex -= 1
+        }
+        let needsSpace = insertIndex > 0 && !(finalSegments[insertIndex - 1].text.hasSuffix(" "))
         let paddedText = needsSpace ? " " + text : text
-        finalSegments.append(TextSegment(text: paddedText, type: .dictated))
+        finalSegments.insert(TextSegment(text: paddedText, type: .dictated), at: insertIndex)
     }
 
     func appendPastedText(_ text: String) {

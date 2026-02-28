@@ -367,7 +367,12 @@ final class MenuBarViewModel: ObservableObject {
                 return
             }
 
-            var text = await deepgram.stopStreaming()
+            // Wait for stream to finalize (sends Finalize, waits for speech_final)
+            _ = await deepgram.stopStreaming()
+
+            // Use overlay as source of truth — it has correct ordering
+            // of dictated and pasted segments.
+            var text = overlay.finalTranscriptText
             text = await services.textProcessingPipeline.process(text)
 
             if isContinueMode {
@@ -558,23 +563,15 @@ final class MenuBarViewModel: ObservableObject {
         guard let text = NSPasteboard.general.string(forType: .string),
               !text.isEmpty else { return }
 
+        // Only update overlay — final text is sourced from overlay.finalTranscriptText
+        // which preserves correct ordering of dictated and pasted segments.
         overlay.appendPastedText(text)
-
-        nonisolated(unsafe) let deepgram = services.deepgramService
-        let padded = text + (text.hasSuffix(" ") ? "" : " ")
-        deepgram.insertAccumulatedText(padded)
-
         print("[Paste] Inserted clipboard text: \"\(text.prefix(40))...\"")
     }
 
     private func handleUndoPaste() {
         guard appState == .streamingRecording else { return }
-
         guard let removed = overlay.undoLastPaste() else { return }
-
-        nonisolated(unsafe) let deepgram = services.deepgramService
-        deepgram.removeAccumulatedText(removed)
-
         print("[Paste] Undo last paste: \"\(removed.prefix(40))...\"")
     }
 
