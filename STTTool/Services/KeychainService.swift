@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 final class KeychainService: KeychainServiceProtocol {
-    private let service = "com.romodanov.STTTool"
+    private let service = "app.apikey.STTTool"
     private let account = "deepgram-api-key"
 
     func saveAPIKey(_ key: String) throws {

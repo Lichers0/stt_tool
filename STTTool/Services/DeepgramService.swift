@@ -327,6 +327,12 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
             }
             let transcript = alternative.transcript ?? ""
 
+            // Check speech_final before skipping empty transcripts (e.g. Finalize response after a pause)
+            if response.isFinal == true && response.speechFinal == true {
+                print("[Deepgram] speech_final received, resuming finalize")
+                consumeFinalizeContinuation()?.resume()
+            }
+
             if transcript.isEmpty { return }
 
             if response.isFinal == true {
@@ -343,14 +349,6 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
                     self.onFinalResult?(transcript)
                 }
 
-                if response.speechFinal == true {
-                    print("[Deepgram] speech_final received, resuming finalize")
-                    lock.lock()
-                    let continuation = finalizeContinuation
-                    finalizeContinuation = nil
-                    lock.unlock()
-                    continuation?.resume()
-                }
             } else {
                 print("[Deepgram] interim: \"\(transcript)\"")
                 lock.lock()
