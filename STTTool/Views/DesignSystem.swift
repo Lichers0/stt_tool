@@ -34,6 +34,12 @@ enum DS {
         // Permission states
         static let grantedBg = Color.green.opacity(0.05)
         static let deniedBg = Color.red.opacity(0.05)
+
+        // Overlay text states (pastel tones)
+        static let overlayInterim = Color.white
+        static let overlayInterimBlocked = Color(red: 1.0, green: 0.7, blue: 0.7)
+        static let overlayFinalized = Color(red: 0.7, green: 1.0, blue: 0.7)
+        static let overlayPasted = Color(red: 0.7, green: 0.85, blue: 1.0)
     }
 
     // MARK: - Typography
