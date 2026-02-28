@@ -370,12 +370,6 @@ final class MenuBarViewModel: ObservableObject {
             var text = await deepgram.stopStreaming()
             text = await services.textProcessingPipeline.process(text)
 
-            if isContinueMode {
-                if let first = text.first, first.isUppercase {
-                    text = " " + first.lowercased() + text.dropFirst()
-                }
-            }
-
             guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 appState = .error("Empty transcription")
                 overlay.dismissImmediately()
@@ -425,12 +419,6 @@ final class MenuBarViewModel: ObservableObject {
                     vocabulary: vocabulary
                 )
                 text = await services.textProcessingPipeline.process(text)
-
-                if isContinueMode {
-                    if let first = text.first, first.isUppercase {
-                        text = " " + first.lowercased() + text.dropFirst()
-                    }
-                }
 
                 guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                     appState = .error("Empty transcription")

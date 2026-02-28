@@ -243,7 +243,17 @@ final class OverlayViewModel: ObservableObject {
 
     func appendFinalText(_ text: String) {
         let needsSpace = !finalSegments.isEmpty && !(finalSegments.last?.text.hasSuffix(" ") ?? true)
-        let paddedText = needsSpace ? " " + text : text
+        var paddedText = needsSpace ? " " + text : text
+
+        // Apply per-segment lowercase when continue mode is active
+        if isContinueMode {
+            let textPart = needsSpace ? String(paddedText.dropFirst()) : paddedText
+            if let first = textPart.first, first.isUppercase {
+                let lowered = first.lowercased() + textPart.dropFirst()
+                paddedText = needsSpace ? " " + lowered : lowered
+            }
+        }
+
         finalSegments.append(TextSegment(text: paddedText, type: .dictated))
         isInterimBlocked = false
     }
