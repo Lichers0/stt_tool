@@ -125,6 +125,8 @@ protocol DeepgramServiceProtocol: AnyObject {
     func stopStreaming() async -> String
     func cancelStreaming()
     func disconnect()
+    func insertAccumulatedText(_ text: String)
+    func removeAccumulatedText(_ text: String)
 }
 
 // MARK: - Service Container

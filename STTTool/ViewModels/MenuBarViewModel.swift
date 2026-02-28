@@ -126,6 +126,7 @@ final class MenuBarViewModel: ObservableObject {
 
         stopRecordingTimer()
         unregisterOverlayHotkeys()
+        unregisterPasteAndUndo()
         services.hotKeyService.unregisterModeToggle()
         services.hotKeyService.unregisterCancel()
 
@@ -263,6 +264,7 @@ final class MenuBarViewModel: ObservableObject {
                 self?.stopRecordingTimer()
                 self?.services.hotKeyService.unregisterModeToggle()
                 self?.services.hotKeyService.unregisterCancel()
+                self?.unregisterPasteAndUndo()
                 self?.resetToIdleAfterDelay()
             }
         }
@@ -297,6 +299,7 @@ final class MenuBarViewModel: ObservableObject {
                 appState = .streamingRecording
                 services.hotKeyService.registerModeToggle()
                 services.hotKeyService.registerCancel()
+                registerPasteAndUndo()
                 playStartSound()
                 startRecordingTimer()
             } catch {
@@ -331,6 +334,7 @@ final class MenuBarViewModel: ObservableObject {
     private func stopRecordingAndTranscribe() {
         stopRecordingTimer()
         unregisterOverlayHotkeys()
+        unregisterPasteAndUndo()
         services.hotKeyService.unregisterModeToggle()
         services.hotKeyService.unregisterCancel()
 
@@ -481,17 +485,9 @@ final class MenuBarViewModel: ObservableObject {
             print("[InsertText] WARNING: previousApp is nil!")
         }
 
-        // Try direct Accessibility text insertion first (most reliable).
-        if let element = previousFocusedElement,
-           insertViaAccessibility(text, into: element) {
-            appState = .idle
-            playStopSound()
-            print("[InsertText] === DONE via Accessibility ===")
-            return
-        }
-
-        // Fallback: clipboard + simulated Cmd+V paste.
-        print("[InsertText] Trying fallback: clipboard + Cmd+V")
+        // Always use clipboard + simulated Cmd+V paste (same approach as SuperWhisper).
+        // AX API insertion was unreliable: some apps report success but don't
+        // process the text for subsequent actions (Enter, etc.).
         do {
             try await services.textInsertionService.insertText(text)
             appState = .idle
@@ -504,44 +500,6 @@ final class MenuBarViewModel: ObservableObject {
         }
     }
 
-    private func insertViaAccessibility(_ text: String, into element: AXUIElement) -> Bool {
-        guard AXIsProcessTrusted() else { return false }
-
-        // Read the value before insertion to compare later.
-        var valueBefore: CFTypeRef?
-        AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueBefore)
-        let beforeStr = valueBefore as? String
-
-        let result = AXUIElementSetAttributeValue(
-            element,
-            kAXSelectedTextAttribute as CFString,
-            text as CFTypeRef
-        )
-
-        guard result == .success else {
-            print("[TextInsertion] AX set failed (\(result.rawValue)), falling back to paste")
-            return false
-        }
-
-        // Verify: read the value after insertion and check the text actually appeared.
-        // Terminal emulators (Ghostty, iTerm2, etc.) report success but don't insert.
-        var valueAfter: CFTypeRef?
-        AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueAfter)
-        let afterStr = valueAfter as? String
-
-        if let after = afterStr {
-            if after != (beforeStr ?? "") && after.contains(text) {
-                print("[TextInsertion] Verified via AX API")
-                return true
-            }
-            print("[TextInsertion] AX reported success but text not found in element, falling back to paste")
-            return false
-        }
-
-        // Cannot read value attribute -- trust the AX result.
-        print("[TextInsertion] Cannot verify (no value attribute), trusting AX result")
-        return true
-    }
 
     // MARK: - Vocabulary Switching
 
@@ -573,6 +531,51 @@ final class MenuBarViewModel: ObservableObject {
         KeyInterceptor.shared.stopIntercepting(keyCode: 123)
         KeyInterceptor.shared.stopIntercepting(keyCode: 124)
         KeyInterceptor.shared.stopIntercepting(keyCode: 36)
+    }
+
+    private func registerPasteAndUndo() {
+        // Cmd+V — paste from clipboard
+        KeyInterceptor.shared.intercept(keyCode: 9, modifiers: .maskCommand) { [weak self] in
+            Task { @MainActor in
+                self?.handlePaste()
+            }
+        }
+        // Cmd+Z — undo last paste
+        KeyInterceptor.shared.intercept(keyCode: 6, modifiers: .maskCommand) { [weak self] in
+            Task { @MainActor in
+                self?.handleUndoPaste()
+            }
+        }
+    }
+
+    private func unregisterPasteAndUndo() {
+        KeyInterceptor.shared.stopIntercepting(keyCode: 9, modifiers: .maskCommand)
+        KeyInterceptor.shared.stopIntercepting(keyCode: 6, modifiers: .maskCommand)
+    }
+
+    private func handlePaste() {
+        guard appState == .streamingRecording else { return }
+        guard let text = NSPasteboard.general.string(forType: .string),
+              !text.isEmpty else { return }
+
+        overlay.appendPastedText(text)
+
+        nonisolated(unsafe) let deepgram = services.deepgramService
+        let padded = text + (text.hasSuffix(" ") ? "" : " ")
+        deepgram.insertAccumulatedText(padded)
+
+        print("[Paste] Inserted clipboard text: \"\(text.prefix(40))...\"")
+    }
+
+    private func handleUndoPaste() {
+        guard appState == .streamingRecording else { return }
+
+        guard let removed = overlay.undoLastPaste() else { return }
+
+        nonisolated(unsafe) let deepgram = services.deepgramService
+        deepgram.removeAccumulatedText(removed)
+
+        print("[Paste] Undo last paste: \"\(removed.prefix(40))...\"")
     }
 
     private func cycleVocabulary(forward: Bool) {

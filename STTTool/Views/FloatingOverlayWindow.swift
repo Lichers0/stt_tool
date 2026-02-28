@@ -76,6 +76,18 @@ final class FloatingOverlayWindow: NSPanel {
         overlayViewModel.isReconnecting = reconnecting
     }
 
+    func appendPastedText(_ text: String) {
+        overlayViewModel.appendPastedText(text)
+        updateSize()
+    }
+
+    @discardableResult
+    func undoLastPaste() -> String? {
+        let removed = overlayViewModel.undoLastPaste()
+        updateSize()
+        return removed
+    }
+
     func showFinalAndDismiss() {
         overlayViewModel.interimText = ""
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
