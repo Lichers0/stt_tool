@@ -321,25 +321,7 @@ struct OverlayContentView: View {
             }
 
             // Transcription text
-            if viewModel.displayText.isEmpty {
-                Text("Listening...")
-                    .font(DS.Typography.caption)
-                    .italic()
-                    .foregroundStyle(.secondary.opacity(0.5))
-            } else {
-                ScrollViewReader { proxy in
-                    ScrollView(.vertical, showsIndicators: false) {
-                        Text(viewModel.displayText)
-                            .font(DS.Typography.body)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .id("bottom")
-                    }
-                    .onChange(of: viewModel.displayText) {
-                        proxy.scrollTo("bottom", anchor: .bottom)
-                    }
-                }
-                .frame(maxHeight: 250)
-            }
+            segmentedText()
         }
         .padding(DS.Spacing.md)
         .frame(width: 400)
@@ -347,6 +329,47 @@ struct OverlayContentView: View {
             VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
         )
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+    }
+
+    @ViewBuilder
+    private func segmentedText() -> some View {
+        if viewModel.finalSegments.isEmpty && viewModel.interimText.isEmpty {
+            Text("Listening...")
+                .font(DS.Typography.caption)
+                .italic()
+                .foregroundStyle(.secondary.opacity(0.5))
+        } else {
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    buildTextView()
+                        .font(DS.Typography.body)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .id("bottom")
+                }
+                .onChange(of: viewModel.displayText) {
+                    proxy.scrollTo("bottom", anchor: .bottom)
+                }
+            }
+            .frame(maxHeight: 250)
+        }
+    }
+
+    private func buildTextView() -> Text {
+        var result = Text("")
+
+        for segment in viewModel.finalSegments {
+            let color: Color = segment.type == .pasted
+                ? .white.opacity(0.7)
+                : .white
+            result = result + Text(segment.text).foregroundColor(color)
+        }
+
+        if !viewModel.interimText.isEmpty {
+            let spacer = viewModel.finalSegments.isEmpty ? "" : " "
+            result = result + Text(spacer + viewModel.interimText).foregroundColor(.white)
+        }
+
+        return result
     }
 
     private func formatTime(_ seconds: Int) -> String {
