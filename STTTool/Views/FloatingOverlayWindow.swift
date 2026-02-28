@@ -112,6 +112,13 @@ final class FloatingOverlayWindow: NSPanel {
         return removed
     }
 
+    @discardableResult
+    func deleteLastChar() -> Bool {
+        let removed = overlayViewModel.deleteLastChar()
+        updateSize()
+        return removed
+    }
+
     var overlayFinalText: String {
         overlayViewModel.finalText
     }
@@ -298,6 +305,29 @@ final class OverlayViewModel: ObservableObject {
             finalSegments[finalSegments.count - 1] = TextSegment(text: newText, type: lastSegment.type)
             return lastWord
         }
+    }
+
+    /// Removes the last character from the last segment. Returns true if a char was removed.
+    @discardableResult
+    func deleteLastChar() -> Bool {
+        guard !finalSegments.isEmpty else { return false }
+        var lastSegment = finalSegments[finalSegments.count - 1]
+
+        if lastSegment.text.isEmpty {
+            finalSegments.removeLast()
+            return deleteLastChar()
+        }
+
+        lastSegment.text.removeLast()
+        if lastSegment.text.isEmpty {
+            finalSegments.removeLast()
+        } else {
+            finalSegments[finalSegments.count - 1] = TextSegment(
+                text: lastSegment.text,
+                type: lastSegment.type
+            )
+        }
+        return true
     }
 
     func reset() {

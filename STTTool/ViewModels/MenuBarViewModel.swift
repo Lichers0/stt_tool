@@ -534,12 +534,17 @@ final class MenuBarViewModel: ObservableObject {
         KeyInterceptor.shared.intercept(keyCode: 7, modifiers: .maskCommand) { [weak self] in
             Task { @MainActor in self?.handleDeleteWord() }
         }
+        // Backspace — delete last character
+        KeyInterceptor.shared.intercept(keyCode: 51) { [weak self] in
+            Task { @MainActor in self?.handleBackspace() }
+        }
     }
 
     private func unregisterEditHotkeys() {
         KeyInterceptor.shared.stopIntercepting(keyCode: 9, modifiers: .maskCommand)
         KeyInterceptor.shared.stopIntercepting(keyCode: 6, modifiers: .maskCommand)
         KeyInterceptor.shared.stopIntercepting(keyCode: 7, modifiers: .maskCommand)
+        KeyInterceptor.shared.stopIntercepting(keyCode: 51)
     }
 
     private func syncDeepgramFromOverlay() {
@@ -582,6 +587,20 @@ final class MenuBarViewModel: ObservableObject {
         guard overlay.deleteLastWord() != nil else { return }
         syncDeepgramFromOverlay()
         print("[DeleteWord] Deleted last word")
+    }
+
+    private func handleBackspace() {
+        guard appState == .streamingRecording else { return }
+
+        guard overlay.isInterimEmpty else {
+            overlay.triggerInterimBlocked()
+            print("[Backspace] Blocked — interim text present")
+            return
+        }
+
+        guard overlay.deleteLastChar() else { return }
+        syncDeepgramFromOverlay()
+        print("[Backspace] Deleted last character")
     }
 
     private func cycleVocabulary(forward: Bool) {
