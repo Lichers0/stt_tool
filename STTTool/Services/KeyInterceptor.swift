@@ -9,7 +9,29 @@ final class KeyInterceptor: @unchecked Sendable {
 
     fileprivate var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
-    private var handlers: [UInt16: () -> Void] = [:]
+    private struct KeyCombo: Hashable {
+        let keyCode: UInt16
+        let modifiers: CGEventFlags
+
+        // Only compare relevant modifier bits
+        static let relevantFlags: CGEventFlags = [.maskCommand, .maskShift, .maskAlternate, .maskControl]
+
+        func matches(keyCode: UInt16, flags: CGEventFlags) -> Bool {
+            self.keyCode == keyCode && self.modifiers == flags.intersection(KeyCombo.relevantFlags)
+        }
+
+        // CGEventFlags doesn't conform to Hashable, so implement manually via rawValue
+        static func == (lhs: KeyCombo, rhs: KeyCombo) -> Bool {
+            lhs.keyCode == rhs.keyCode && lhs.modifiers.rawValue == rhs.modifiers.rawValue
+        }
+
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(keyCode)
+            hasher.combine(modifiers.rawValue)
+        }
+    }
+
+    private var handlers: [KeyCombo: () -> Void] = [:]
     private let lock = NSLock()
 
     private init() {}
@@ -44,18 +66,21 @@ final class KeyInterceptor: @unchecked Sendable {
         print("[KeyInterceptor] Event tap started")
     }
 
-    /// Register a handler for a specific keyCode. The key event will be consumed.
-    func intercept(keyCode: UInt16, handler: @escaping () -> Void) {
+    /// Register a handler for a specific keyCode with optional modifier keys.
+    /// The key event will be consumed when matched.
+    func intercept(keyCode: UInt16, modifiers: CGEventFlags = [], handler: @escaping () -> Void) {
+        let combo = KeyCombo(keyCode: keyCode, modifiers: modifiers.intersection(KeyCombo.relevantFlags))
         lock.lock()
-        handlers[keyCode] = handler
+        handlers[combo] = handler
         lock.unlock()
         ensureTapEnabled()
     }
 
     /// Remove the handler for a specific keyCode.
-    func stopIntercepting(keyCode: UInt16) {
+    func stopIntercepting(keyCode: UInt16, modifiers: CGEventFlags = []) {
+        let combo = KeyCombo(keyCode: keyCode, modifiers: modifiers.intersection(KeyCombo.relevantFlags))
         lock.lock()
-        handlers.removeValue(forKey: keyCode)
+        handlers.removeValue(forKey: combo)
         lock.unlock()
     }
 
@@ -69,12 +94,12 @@ final class KeyInterceptor: @unchecked Sendable {
     // MARK: - Internal
 
     /// Called from the C callback on the main thread.
-    fileprivate func handleKeyEvent(_ keyCode: UInt16) -> Bool {
+    fileprivate func handleKeyEvent(_ keyCode: UInt16, flags: CGEventFlags) -> Bool {
         lock.lock()
-        let handler = handlers[keyCode]
+        let matchedHandler = handlers.first { $0.key.matches(keyCode: keyCode, flags: flags) }?.value
         lock.unlock()
 
-        if let handler {
+        if let handler = matchedHandler {
             DispatchQueue.main.async { handler() }
             return true // consumed
         }
@@ -112,9 +137,10 @@ private func keyInterceptorCallback(
     }
 
     let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+    let flags = event.flags
     let interceptor = Unmanaged<KeyInterceptor>.fromOpaque(userInfo).takeUnretainedValue()
 
-    if interceptor.handleKeyEvent(keyCode) {
+    if interceptor.handleKeyEvent(keyCode, flags: flags) {
         return nil // consume event
     }
 
