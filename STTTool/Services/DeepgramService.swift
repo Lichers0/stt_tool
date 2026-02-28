@@ -232,6 +232,13 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
         lock.unlock()
     }
 
+    /// Replace accumulated text entirely (for sync from overlay after mutations).
+    func replaceAccumulatedText(_ text: String) {
+        lock.lock()
+        accumulatedText = text
+        lock.unlock()
+    }
+
     // MARK: - Disconnect
 
     func disconnect() {

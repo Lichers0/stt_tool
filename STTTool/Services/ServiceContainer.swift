@@ -127,6 +127,7 @@ protocol DeepgramServiceProtocol: AnyObject {
     func disconnect()
     func insertAccumulatedText(_ text: String)
     func removeAccumulatedText(_ text: String)
+    func replaceAccumulatedText(_ text: String)
 }
 
 // MARK: - Service Container
