@@ -411,36 +411,21 @@ struct OverlayContentView: View {
     private func buildTextView() -> Text {
         var result = Text("")
 
-        // Split finalSegments into leading (up to last dictated) and trailing pastes.
-        // Render: [leading segments] [interimText] [trailing pastes]
-        // This ensures paste appears after the currently spoken word, not before it.
-        let segments = viewModel.finalSegments
-        var trailingPasteStart = segments.count
-        while trailingPasteStart > 0 && segments[trailingPasteStart - 1].type == .pasted {
-            trailingPasteStart -= 1
-        }
-
-        // Leading segments (all dictated + any earlier pastes)
-        for i in 0..<trailingPasteStart {
-            let segment = segments[i]
-            let color: Color = segment.type == .pasted ? .white.opacity(0.7) : .white
+        for segment in viewModel.finalSegments {
+            let color: Color = switch segment.type {
+            case .dictated: DS.Colors.overlayFinalized
+            case .pasted: DS.Colors.overlayPasted
+            }
             result = result + Text(segment.text).foregroundColor(color)
         }
 
-        // Interim text (current spoken word, not yet finalized)
         if !viewModel.interimText.isEmpty {
-            let spacer = trailingPasteStart > 0 ? " " : ""
-            result = result + Text(spacer + viewModel.interimText).foregroundColor(.white)
-        }
-
-        // Trailing pastes (added while interim word was active)
-        let hasContentBefore = trailingPasteStart > 0 || !viewModel.interimText.isEmpty
-        for (offset, i) in (trailingPasteStart..<segments.count).enumerated() {
-            let segment = segments[i]
-            let needsSpace = (offset == 0 && hasContentBefore)
-                || (offset > 0 && !(segments[i - 1].text.hasSuffix(" ")))
-            let spacer = needsSpace ? " " : ""
-            result = result + Text(spacer + segment.text).foregroundColor(.white.opacity(0.7))
+            let spacer = viewModel.finalSegments.isEmpty ? "" : " "
+            let interimColor: Color = viewModel.isInterimBlocked
+                ? DS.Colors.overlayInterimBlocked
+                : DS.Colors.overlayInterim
+            result = result + Text(spacer + viewModel.interimText)
+                .foregroundColor(interimColor)
         }
 
         return result
