@@ -192,8 +192,9 @@ enum TextSegmentType {
     case pasted
 }
 
-struct TextSegment {
-    let text: String
+struct TextSegment: Identifiable {
+    let id = UUID()
+    var text: String
     let type: TextSegmentType
 }
 
@@ -212,6 +213,8 @@ final class OverlayViewModel: ObservableObject {
     @Published var isPendingSwitch = false
     @Published var isReconnecting = false
     @Published var isConnecting = true
+    @Published var isInterimBlocked = false
+    @Published var removingSegmentId: UUID?
 
     var displayedVocabularyName: String {
         previewedVocabularyName ?? vocabularyName
@@ -222,23 +225,16 @@ final class OverlayViewModel: ObservableObject {
     }
 
     func appendFinalText(_ text: String) {
-        // Insert before any trailing pasted segments so dictated text
-        // appears before pastes that were added while it was still interim.
-        var insertIndex = finalSegments.count
-        while insertIndex > 0 && finalSegments[insertIndex - 1].type == .pasted {
-            insertIndex -= 1
-        }
-        let needsSpace = insertIndex > 0 && !(finalSegments[insertIndex - 1].text.hasSuffix(" "))
+        let needsSpace = !finalSegments.isEmpty && !(finalSegments.last?.text.hasSuffix(" ") ?? true)
         let paddedText = needsSpace ? " " + text : text
-        finalSegments.insert(TextSegment(text: paddedText, type: .dictated), at: insertIndex)
+        finalSegments.append(TextSegment(text: paddedText, type: .dictated))
+        isInterimBlocked = false
     }
 
     func appendPastedText(_ text: String) {
         guard !text.isEmpty else { return }
-        // Only ensure trailing space (so next dictated word doesn't merge).
-        // Leading space is handled in buildTextView based on actual render context,
-        // since paste may appear after interimText rather than after finalSegments.
-        let padded = text + (text.hasSuffix(" ") ? "" : " ")
+        let needsSpace = !finalSegments.isEmpty && !(finalSegments.last?.text.hasSuffix(" ") ?? true)
+        let padded = (needsSpace ? " " : "") + text + (text.hasSuffix(" ") ? "" : " ")
         finalSegments.append(TextSegment(text: padded, type: .pasted))
     }
 
@@ -252,6 +248,31 @@ final class OverlayViewModel: ObservableObject {
         return removed.text
     }
 
+    /// Removes the last word from the last segment. Returns the removed word or nil.
+    func deleteLastWord() -> String? {
+        guard !finalSegments.isEmpty else { return nil }
+        let lastSegment = finalSegments[finalSegments.count - 1]
+        let trimmed = lastSegment.text.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else {
+            finalSegments.removeLast()
+            return deleteLastWord()
+        }
+
+        let words = trimmed.components(separatedBy: " ")
+        guard let lastWord = words.last, !lastWord.isEmpty else { return nil }
+
+        if words.count <= 1 {
+            // Entire segment is one word — remove the segment
+            finalSegments.removeLast()
+            return lastWord
+        } else {
+            // Remove last word, keep trailing space
+            let newText = words.dropLast().joined(separator: " ") + " "
+            finalSegments[finalSegments.count - 1] = TextSegment(text: newText, type: lastSegment.type)
+            return lastWord
+        }
+    }
+
     func reset() {
         finalSegments = []
         interimText = ""
@@ -262,6 +283,8 @@ final class OverlayViewModel: ObservableObject {
         isPendingSwitch = false
         isReconnecting = false
         isConnecting = true
+        isInterimBlocked = false
+        removingSegmentId = nil
     }
 
     var displayText: String {
