@@ -164,9 +164,23 @@ final class FloatingOverlayWindow: NSPanel {
 
 // MARK: - Overlay ViewModel
 
+enum TextSegmentType {
+    case dictated
+    case pasted
+}
+
+struct TextSegment {
+    let text: String
+    let type: TextSegmentType
+}
+
 @MainActor
 final class OverlayViewModel: ObservableObject {
-    @Published var finalText = ""
+    @Published var finalSegments: [TextSegment] = []
+
+    var finalText: String {
+        finalSegments.map(\.text).joined()
+    }
     @Published var interimText = ""
     @Published var isContinueMode = false
     @Published var timerSeconds = 0
@@ -185,14 +199,30 @@ final class OverlayViewModel: ObservableObject {
     }
 
     func appendFinalText(_ text: String) {
-        if !finalText.isEmpty && !finalText.hasSuffix(" ") {
-            finalText += " "
+        let needsSpace = !finalSegments.isEmpty && !(finalSegments.last?.text.hasSuffix(" ") ?? true)
+        let paddedText = needsSpace ? " " + text : text
+        finalSegments.append(TextSegment(text: paddedText, type: .dictated))
+    }
+
+    func appendPastedText(_ text: String) {
+        guard !text.isEmpty else { return }
+        let needsSpace = !finalSegments.isEmpty && !(finalSegments.last?.text.hasSuffix(" ") ?? true)
+        let padded = (needsSpace ? " " : "") + text + (text.hasSuffix(" ") ? "" : " ")
+        finalSegments.append(TextSegment(text: padded, type: .pasted))
+    }
+
+    /// Removes the last pasted segment. Returns the removed text or nil.
+    @discardableResult
+    func undoLastPaste() -> String? {
+        guard let lastPasteIndex = finalSegments.lastIndex(where: { $0.type == .pasted }) else {
+            return nil
         }
-        finalText += text
+        let removed = finalSegments.remove(at: lastPasteIndex)
+        return removed.text
     }
 
     func reset() {
-        finalText = ""
+        finalSegments = []
         interimText = ""
         isContinueMode = false
         timerSeconds = 0
@@ -204,13 +234,14 @@ final class OverlayViewModel: ObservableObject {
     }
 
     var displayText: String {
+        let final = finalText
         if !interimText.isEmpty {
-            if finalText.isEmpty {
+            if final.isEmpty {
                 return interimText
             }
-            return finalText + " " + interimText
+            return final + " " + interimText
         }
-        return finalText
+        return final
     }
 }
 
