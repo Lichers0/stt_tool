@@ -88,15 +88,32 @@ final class FloatingOverlayWindow: NSPanel {
         return removed
     }
 
-    /// Final transcript text with correct segment ordering (including pastes).
-    /// Mirrors DeepgramService.getResultText logic but uses overlay's ordered segments.
-    var finalTranscriptText: String {
-        let final = overlayViewModel.finalText
-        let interim = overlayViewModel.interimText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if interim.isEmpty { return final }
-        if final.isEmpty { return interim }
-        if final.hasSuffix(interim) { return final }
-        return final + " " + interim
+    var isInterimEmpty: Bool {
+        overlayViewModel.interimText.isEmpty
+    }
+
+    func triggerInterimBlocked() {
+        overlayViewModel.isInterimBlocked = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(150))
+            overlayViewModel.isInterimBlocked = false
+            try? await Task.sleep(for: .milliseconds(150))
+            overlayViewModel.isInterimBlocked = true
+            try? await Task.sleep(for: .milliseconds(150))
+            overlayViewModel.isInterimBlocked = false
+            try? await Task.sleep(for: .milliseconds(150))
+            overlayViewModel.isInterimBlocked = true
+        }
+    }
+
+    func deleteLastWord() -> String? {
+        let removed = overlayViewModel.deleteLastWord()
+        updateSize()
+        return removed
+    }
+
+    var overlayFinalText: String {
+        overlayViewModel.finalText
     }
 
     func showFinalAndDismiss() {

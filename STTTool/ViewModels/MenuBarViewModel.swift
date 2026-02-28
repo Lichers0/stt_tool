@@ -126,7 +126,7 @@ final class MenuBarViewModel: ObservableObject {
 
         stopRecordingTimer()
         unregisterOverlayHotkeys()
-        unregisterPasteAndUndo()
+        unregisterEditHotkeys()
         services.hotKeyService.unregisterModeToggle()
         services.hotKeyService.unregisterCancel()
 
@@ -264,7 +264,7 @@ final class MenuBarViewModel: ObservableObject {
                 self?.stopRecordingTimer()
                 self?.services.hotKeyService.unregisterModeToggle()
                 self?.services.hotKeyService.unregisterCancel()
-                self?.unregisterPasteAndUndo()
+                self?.unregisterEditHotkeys()
                 self?.resetToIdleAfterDelay()
             }
         }
@@ -299,7 +299,7 @@ final class MenuBarViewModel: ObservableObject {
                 appState = .streamingRecording
                 services.hotKeyService.registerModeToggle()
                 services.hotKeyService.registerCancel()
-                registerPasteAndUndo()
+                registerEditHotkeys()
                 playStartSound()
                 startRecordingTimer()
             } catch {
@@ -334,7 +334,7 @@ final class MenuBarViewModel: ObservableObject {
     private func stopRecordingAndTranscribe() {
         stopRecordingTimer()
         unregisterOverlayHotkeys()
-        unregisterPasteAndUndo()
+        unregisterEditHotkeys()
         services.hotKeyService.unregisterModeToggle()
         services.hotKeyService.unregisterCancel()
 
@@ -367,12 +367,7 @@ final class MenuBarViewModel: ObservableObject {
                 return
             }
 
-            // Wait for stream to finalize (sends Finalize, waits for speech_final)
-            _ = await deepgram.stopStreaming()
-
-            // Use overlay as source of truth — it has correct ordering
-            // of dictated and pasted segments.
-            var text = overlay.finalTranscriptText
+            var text = await deepgram.stopStreaming()
             text = await services.textProcessingPipeline.process(text)
 
             if isContinueMode {
@@ -538,24 +533,30 @@ final class MenuBarViewModel: ObservableObject {
         KeyInterceptor.shared.stopIntercepting(keyCode: 36)
     }
 
-    private func registerPasteAndUndo() {
+    private func registerEditHotkeys() {
         // Cmd+V — paste from clipboard
         KeyInterceptor.shared.intercept(keyCode: 9, modifiers: .maskCommand) { [weak self] in
-            Task { @MainActor in
-                self?.handlePaste()
-            }
+            Task { @MainActor in self?.handlePaste() }
         }
         // Cmd+Z — undo last paste
         KeyInterceptor.shared.intercept(keyCode: 6, modifiers: .maskCommand) { [weak self] in
-            Task { @MainActor in
-                self?.handleUndoPaste()
-            }
+            Task { @MainActor in self?.handleUndoPaste() }
+        }
+        // Cmd+X — delete last word
+        KeyInterceptor.shared.intercept(keyCode: 7, modifiers: .maskCommand) { [weak self] in
+            Task { @MainActor in self?.handleDeleteWord() }
         }
     }
 
-    private func unregisterPasteAndUndo() {
+    private func unregisterEditHotkeys() {
         KeyInterceptor.shared.stopIntercepting(keyCode: 9, modifiers: .maskCommand)
         KeyInterceptor.shared.stopIntercepting(keyCode: 6, modifiers: .maskCommand)
+        KeyInterceptor.shared.stopIntercepting(keyCode: 7, modifiers: .maskCommand)
+    }
+
+    private func syncDeepgramFromOverlay() {
+        nonisolated(unsafe) let deepgram = services.deepgramService
+        deepgram.replaceAccumulatedText(overlay.overlayFinalText)
     }
 
     private func handlePaste() {
@@ -563,16 +564,36 @@ final class MenuBarViewModel: ObservableObject {
         guard let text = NSPasteboard.general.string(forType: .string),
               !text.isEmpty else { return }
 
-        // Only update overlay — final text is sourced from overlay.finalTranscriptText
-        // which preserves correct ordering of dictated and pasted segments.
+        guard overlay.isInterimEmpty else {
+            overlay.triggerInterimBlocked()
+            print("[Paste] Blocked — interim text present")
+            return
+        }
+
         overlay.appendPastedText(text)
+        syncDeepgramFromOverlay()
         print("[Paste] Inserted clipboard text: \"\(text.prefix(40))...\"")
     }
 
     private func handleUndoPaste() {
         guard appState == .streamingRecording else { return }
-        guard let removed = overlay.undoLastPaste() else { return }
-        print("[Paste] Undo last paste: \"\(removed.prefix(40))...\"")
+        guard overlay.undoLastPaste() != nil else { return }
+        syncDeepgramFromOverlay()
+        print("[Paste] Undo last paste")
+    }
+
+    private func handleDeleteWord() {
+        guard appState == .streamingRecording else { return }
+
+        guard overlay.isInterimEmpty else {
+            overlay.triggerInterimBlocked()
+            print("[DeleteWord] Blocked — interim text present")
+            return
+        }
+
+        guard overlay.deleteLastWord() != nil else { return }
+        syncDeepgramFromOverlay()
+        print("[DeleteWord] Deleted last word")
     }
 
     private func cycleVocabulary(forward: Bool) {
