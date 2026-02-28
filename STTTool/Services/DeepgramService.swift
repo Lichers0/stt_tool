@@ -211,6 +211,27 @@ final class DeepgramService: DeepgramServiceProtocol, WebSocketDelegate, @unchec
         lock.unlock()
     }
 
+    // MARK: - Accumulated Text Manipulation
+
+    /// Insert external text (e.g. clipboard paste) into the accumulated transcript.
+    func insertAccumulatedText(_ text: String) {
+        lock.lock()
+        if !accumulatedText.isEmpty && !accumulatedText.hasSuffix(" ") {
+            accumulatedText += " "
+        }
+        accumulatedText += text
+        lock.unlock()
+    }
+
+    /// Remove a previously inserted text from the end of accumulated transcript.
+    func removeAccumulatedText(_ text: String) {
+        lock.lock()
+        if accumulatedText.hasSuffix(text) {
+            accumulatedText.removeLast(text.count)
+        }
+        lock.unlock()
+    }
+
     // MARK: - Disconnect
 
     func disconnect() {
