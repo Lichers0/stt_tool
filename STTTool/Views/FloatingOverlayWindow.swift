@@ -348,10 +348,13 @@ final class OverlayViewModel: ObservableObject {
         return true
     }
 
-    /// Appends a space to the last segment. Returns false if no segment or already ends with space.
+    /// Appends a space to the last segment (or creates one). Returns false if already ends with space.
     @discardableResult
     func appendSpace() -> Bool {
-        guard !finalSegments.isEmpty else { return false }
+        if finalSegments.isEmpty {
+            finalSegments.append(TextSegment(text: " ", type: .dictated))
+            return true
+        }
         let lastSegment = finalSegments[finalSegments.count - 1]
         guard !lastSegment.text.hasSuffix(" ") else { return false }
 
