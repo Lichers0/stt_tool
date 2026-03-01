@@ -1,3 +1,5 @@
-- Fix Sparkle update check not visible in menu bar app
-- Enable automatic update checks on launch
-- Show app version in popover
+- Fix overlay window not expanding on Cmd+V paste
+- Fix overlay window position drift on reopen after large text
+- Fix resize lag when new words appear in overlay
+- Fix lowercase toggle not applied on final text insertion
+- Allow space append on empty overlay
