@@ -217,10 +217,12 @@ final class FloatingOverlayWindow: NSPanel {
     }
 
     private func updateSize() {
-        let fittingSize = hostingView.fittingSize
-        let width: CGFloat = 400
-        let height = max(fittingSize.height, 60)
-        setFrame(NSRect(x: frame.origin.x, y: screenOriginY, width: width, height: height), display: true)
+        DispatchQueue.main.async { [self] in
+            let fittingSize = hostingView.fittingSize
+            let width: CGFloat = 400
+            let height = max(fittingSize.height, 60)
+            setFrame(NSRect(x: frame.origin.x, y: screenOriginY, width: width, height: height), display: true)
+        }
     }
 }
 
