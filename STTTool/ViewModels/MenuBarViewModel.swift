@@ -367,7 +367,8 @@ final class MenuBarViewModel: ObservableObject {
                 return
             }
 
-            var text = await deepgram.stopStreaming()
+            _ = await deepgram.stopStreaming()
+            var text = overlay.overlayFinalText
             text = await services.textProcessingPipeline.process(text)
 
             guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
