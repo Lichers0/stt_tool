@@ -5,6 +5,7 @@ final class FloatingOverlayWindow: NSPanel {
 
     private let hostingView: NSHostingView<OverlayContentView>
     private let overlayViewModel = OverlayViewModel()
+    private var screenOriginY: CGFloat = 0
 
     init() {
         hostingView = NSHostingView(rootView: OverlayContentView(viewModel: overlayViewModel))
@@ -170,6 +171,7 @@ final class FloatingOverlayWindow: NSPanel {
         let height: CGFloat = 60
         let x = visibleFrame.midX - width / 2
         let y = visibleFrame.origin.y + 40
+        screenOriginY = y
         setFrame(NSRect(x: x, y: y, width: width, height: height), display: false)
     }
 
@@ -218,8 +220,7 @@ final class FloatingOverlayWindow: NSPanel {
         let fittingSize = hostingView.fittingSize
         let width: CGFloat = 400
         let height = max(fittingSize.height, 60)
-        let bottomY = frame.origin.y
-        setFrame(NSRect(x: frame.origin.x, y: bottomY, width: width, height: height), display: true)
+        setFrame(NSRect(x: frame.origin.x, y: screenOriginY, width: width, height: height), display: true)
     }
 }
 
