@@ -66,6 +66,9 @@ struct MenuBarPopoverView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.bottom, DS.Spacing.sm)
         }
+        .onAppear {
+            activeTab = .main
+        }
         .frame(width: DS.Layout.popoverWidth)
         .transaction { $0.animation = nil }
         .onChange(of: activeTab) { _, newTab in
@@ -97,6 +100,7 @@ struct MenuBarPopoverView: View {
                                         radius: 1, y: 1)
                         )
                         .foregroundStyle(activeTab == tab ? .primary : .secondary)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
