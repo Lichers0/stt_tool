@@ -46,6 +46,7 @@ final class MenuBarViewModel: ObservableObject {
     func activate() {
         KeyInterceptor.shared.start()
         setupHotKey()
+        setupDeviceDisconnectHandler()
     }
 
     func toggleRecording() {
@@ -176,6 +177,7 @@ final class MenuBarViewModel: ObservableObject {
 
     private func startWhisperKitRecording() {
         do {
+            try services.audioCaptureService.setInputDevice(services.audioDeviceService.effectiveDeviceID)
             try services.audioCaptureService.startRecording()
             appState = .recording
             services.hotKeyService.registerCancel()
@@ -271,6 +273,7 @@ final class MenuBarViewModel: ObservableObject {
 
         // Start audio capture immediately and buffer chunks while connecting
         do {
+            try services.audioCaptureService.setInputDevice(services.audioDeviceService.effectiveDeviceID)
             services.audioCaptureService.startBuffering()
             try services.audioCaptureService.startStreaming { _ in }
         } catch {
@@ -313,6 +316,7 @@ final class MenuBarViewModel: ObservableObject {
 
     private func startDeepgramREST(apiKey: String, vocabulary: [String]) {
         do {
+            try services.audioCaptureService.setInputDevice(services.audioDeviceService.effectiveDeviceID)
             try services.audioCaptureService.startStreaming { _ in
                 // REST mode: ignore chunks, just record audio
             }
@@ -704,6 +708,39 @@ final class MenuBarViewModel: ObservableObject {
                 print("[VocabSwitch] Reconnection failed: \(error.localizedDescription)")
             }
         }
+    }
+
+    // MARK: - Device Disconnect
+
+    private func setupDeviceDisconnectHandler() {
+        services.audioCaptureService.onDeviceDisconnected = { [weak self] in
+            Task { @MainActor in
+                self?.handleDeviceDisconnect()
+            }
+        }
+    }
+
+    private func handleDeviceDisconnect() {
+        guard appState == .recording || appState == .streamingRecording else { return }
+
+        stopRecordingTimer()
+        unregisterOverlayHotkeys()
+        unregisterEditHotkeys()
+        services.hotKeyService.unregisterModeToggle()
+        services.hotKeyService.unregisterCancel()
+
+        if appState == .streamingRecording {
+            let mode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
+            if mode == "streaming" {
+                nonisolated(unsafe) let deepgram = services.deepgramService
+                deepgram.cancelStreaming()
+            }
+        }
+        // AudioCaptureService already stopped by forceStop()
+
+        overlay.showError("Microphone disconnected")
+        appState = .idle
+        print("[DeviceDisconnect] Recording stopped, mic disconnected")
     }
 
     // MARK: - Recording Timer
