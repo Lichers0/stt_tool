@@ -39,6 +39,7 @@
 		B4AA7A416B0FC9EDAB44F8DD /* KeyInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E4D897A488AC64CE45CA656 /* KeyInterceptor.swift */; };
 		B6239840A49AE60C9D2C771C /* StatusIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1796A7D79294A992DCD24EAB /* StatusIndicator.swift */; };
 		B670F86EB5749DCD76311674 /* HistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F346D7F85E96FB7D09962F8A /* HistoryService.swift */; };
+		B9BEF939AA3A45CA3B6ACAAD /* AudioDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AE88FF3C71BE93F5EC0568D /* AudioDevice.swift */; };
 		C51CA7DE4CBF14ED6B840985 /* RecordButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34545F671838F54D617C6FA0 /* RecordButton.swift */; };
 		C6D1F19B6D7CEC514710ECE8 /* mixkit-software-interface-start-2574.wav in Resources */ = {isa = PBXBuildFile; fileRef = 6AE5A128CBEF8C46C6771A74 /* mixkit-software-interface-start-2574.wav */; };
 		C6FB2332A765B2EA58113749 /* STTToolApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73DE9C7EA7812BD44625BE8F /* STTToolApp.swift */; };
@@ -59,6 +60,7 @@
 		1796A7D79294A992DCD24EAB /* StatusIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusIndicator.swift; sourceTree = "<group>"; };
 		1E4D897A488AC64CE45CA656 /* KeyInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyInterceptor.swift; sourceTree = "<group>"; };
 		202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingOverlayWindow.swift; sourceTree = "<group>"; };
+		2AE88FF3C71BE93F5EC0568D /* AudioDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevice.swift; sourceTree = "<group>"; };
 		2B668F7B93D4B311BA616E11 /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
 		34545F671838F54D617C6FA0 /* RecordButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordButton.swift; sourceTree = "<group>"; };
 		3E37DD900D7EA1525E213137 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -122,6 +124,7 @@
 			isa = PBXGroup;
 			children = (
 				5EB21136745D8C317847AD27 /* AppState.swift */,
+				2AE88FF3C71BE93F5EC0568D /* AudioDevice.swift */,
 				4550D5146A0FBEABC084520E /* TranscriptionRecord.swift */,
 				0394E64FA9832AEFB509927F /* Vocabulary.swift */,
 			);
@@ -309,6 +312,7 @@
 				56B18D03AA29C4C610036807 /* ActionButton.swift in Sources */,
 				32A8BDC328045268BD2EBEBA /* AppState.swift in Sources */,
 				4B15C8E658F1FB5D81633E69 /* AudioCaptureService.swift in Sources */,
+				B9BEF939AA3A45CA3B6ACAAD /* AudioDevice.swift in Sources */,
 				2CFA6935AB10D91C8295D29F /* Constants.swift in Sources */,
 				7BAC0C56CAC71BD36E41A4A0 /* DeepgramRESTService.swift in Sources */,
 				35629D45E6FC52EED9DC1D45 /* DeepgramService.swift in Sources */,
@@ -423,7 +427,7 @@
 				INFOPLIST_FILE = STTTool/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.5.1;
+				MARKETING_VERSION = 1.5.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.apikey.STTTool;
 				SDKROOT = macosx;
 				SWIFT_STRICT_CONCURRENCY = targeted;
@@ -443,7 +447,7 @@
 				INFOPLIST_FILE = STTTool/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.5.1;
+				MARKETING_VERSION = 1.5.2;
 				PRODUCT_BUNDLE_IDENTIFIER = app.apikey.STTTool;
 				SDKROOT = macosx;
 				SWIFT_STRICT_CONCURRENCY = targeted;
