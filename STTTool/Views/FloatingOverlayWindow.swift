@@ -6,6 +6,7 @@ final class FloatingOverlayWindow: NSPanel {
     private let hostingView: NSHostingView<OverlayContentView>
     private let overlayViewModel = OverlayViewModel()
     private var screenOriginY: CGFloat = 0
+    private var autoDismissTask: Task<Void, Never>?
 
     init() {
         hostingView = NSHostingView(rootView: OverlayContentView(viewModel: overlayViewModel))
@@ -31,6 +32,7 @@ final class FloatingOverlayWindow: NSPanel {
     // MARK: - Public API
 
     func showForRecording(targetApp: NSRunningApplication? = nil) {
+        autoDismissTask?.cancel()
         overlayViewModel.reset()
         positionOnScreen(of: targetApp)
         alphaValue = 0
@@ -139,6 +141,7 @@ final class FloatingOverlayWindow: NSPanel {
     }
 
     func showError(_ message: String) {
+        autoDismissTask?.cancel()
         overlayViewModel.reset()
         overlayViewModel.errorMessage = message
         overlayViewModel.isConnecting = false
@@ -152,8 +155,9 @@ final class FloatingOverlayWindow: NSPanel {
         }
 
         // Auto-dismiss after 2 seconds
-        Task { @MainActor in
+        autoDismissTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
             self.dismissAnimated()
         }
     }

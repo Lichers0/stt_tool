@@ -730,11 +730,12 @@ final class MenuBarViewModel: ObservableObject {
         services.hotKeyService.unregisterCancel()
 
         if appState == .streamingRecording {
+            nonisolated(unsafe) let deepgram = services.deepgramService
             let mode = UserDefaults.standard.string(forKey: Constants.deepgramModeKey) ?? Constants.defaultDeepgramMode
             if mode == "streaming" {
-                nonisolated(unsafe) let deepgram = services.deepgramService
                 deepgram.cancelStreaming()
             }
+            deepgram.disconnect()
         }
         // AudioCaptureService already stopped by forceStop()
 
