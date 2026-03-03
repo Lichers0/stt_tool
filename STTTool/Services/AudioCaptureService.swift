@@ -13,8 +13,20 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
     private var audioBuffer: [Data] = []
     private let bufferLock = NSLock()
     private var drainSemaphore: DispatchSemaphore?
+    private var configObserver: NSObjectProtocol?
 
     private(set) var isRecording = false
+    var onDeviceDisconnected: (() -> Void)?
+
+    init() {
+        observeConfigurationChanges()
+    }
+
+    deinit {
+        if let observer = configObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
 
     func startRecording() throws {
         guard !isRecording else { return }
@@ -253,6 +265,40 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
         guard status == noErr else {
             throw AudioCaptureError.deviceError
         }
+    }
+
+    // MARK: - Device Disconnect Handling
+
+    private func observeConfigurationChanges() {
+        configObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: audioEngine,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, self.isRecording else { return }
+            print("[AudioCapture] Engine configuration changed — device likely disconnected")
+            self.forceStop()
+            self.onDeviceDisconnected?()
+        }
+    }
+
+    private func forceStop() {
+        guard isRecording else { return }
+        audioEngine.inputNode.removeTap(onBus: 0)
+        audioEngine.stop()
+        isRecording = false
+
+        lock.lock()
+        samples.removeAll()
+        lock.unlock()
+
+        chunkCallback = nil
+        isStreamingMode = false
+        bufferLock.lock()
+        isBuffering = false
+        audioBuffer.removeAll()
+        drainSemaphore = nil
+        bufferLock.unlock()
     }
 
     func stopRecording() -> [Float] {

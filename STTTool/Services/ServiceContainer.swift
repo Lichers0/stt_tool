@@ -5,6 +5,7 @@ import Foundation
 
 protocol AudioCaptureServiceProtocol: AnyObject, Sendable {
     var isRecording: Bool { get }
+    var onDeviceDisconnected: (() -> Void)? { get set }
     func startRecording() throws
     func stopRecording() -> [Float]
     func startStreaming(onChunk: @escaping (Data) -> Void) throws
