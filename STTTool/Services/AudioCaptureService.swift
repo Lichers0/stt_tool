@@ -1,4 +1,5 @@
 @preconcurrency import AVFoundation
+import CoreAudio
 import Foundation
 
 final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendable {
@@ -229,6 +230,31 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
         bufferLock.unlock()
     }
 
+    // MARK: - Device Selection
+
+    func setInputDevice(_ deviceID: AudioDeviceID?) throws {
+        guard let deviceID else { return }  // nil = use system default (no-op)
+
+        let inputNode = audioEngine.inputNode
+        guard let audioUnit = inputNode.audioUnit else {
+            throw AudioCaptureError.deviceError
+        }
+
+        var devID = deviceID
+        let status = AudioUnitSetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &devID,
+            UInt32(MemoryLayout<AudioDeviceID>.size)
+        )
+
+        guard status == noErr else {
+            throw AudioCaptureError.deviceError
+        }
+    }
+
     func stopRecording() -> [Float] {
         guard isRecording else { return [] }
 
@@ -248,6 +274,7 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
 enum AudioCaptureError: LocalizedError {
     case formatError
     case converterError
+    case deviceError
 
     var errorDescription: String? {
         switch self {
@@ -255,6 +282,8 @@ enum AudioCaptureError: LocalizedError {
             return "Failed to create target audio format"
         case .converterError:
             return "Failed to create audio converter"
+        case .deviceError:
+            return "Failed to set audio input device"
         }
     }
 }

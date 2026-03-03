@@ -1,3 +1,4 @@
+import CoreAudio
 import Foundation
 
 // MARK: - Service Protocols
@@ -12,6 +13,7 @@ protocol AudioCaptureServiceProtocol: AnyObject, Sendable {
     func startBuffering()
     func flushBuffer(to callback: (Data) -> Void)
     func replaceChunkCallback(_ callback: @escaping (Data) -> Void)
+    func setInputDevice(_ deviceID: AudioDeviceID?) throws
 }
 
 protocol TranscriptionServiceProtocol: AnyObject, Sendable {
@@ -113,6 +115,16 @@ protocol VocabularyServiceProtocol: AnyObject {
     func previousVocabulary(before currentId: UUID) -> Vocabulary?
 }
 
+@MainActor
+protocol AudioDeviceServiceProtocol: AnyObject {
+    var availableDevices: [AudioDevice] { get }
+    var selectedDeviceUID: String { get set }
+    var activeDevice: AudioDevice? { get }
+    var effectiveDeviceID: AudioDeviceID? { get }
+    func selectDevice(uid: String)
+    func refreshDeviceList()
+}
+
 protocol DeepgramServiceProtocol: AnyObject {
     var onInterimResult: ((String) -> Void)? { get set }
     var onFinalResult: ((String) -> Void)? { get set }
@@ -145,6 +157,7 @@ final class ServiceContainer {
     let keychainService: KeychainServiceProtocol
     let deepgramService: DeepgramServiceProtocol
     let deepgramRESTService: DeepgramRESTServiceProtocol
+    let audioDeviceService: AudioDeviceServiceProtocol
     let vocabularyService: VocabularyServiceProtocol
 
     init(
@@ -159,6 +172,7 @@ final class ServiceContainer {
         keychainService: KeychainServiceProtocol? = nil,
         deepgramService: DeepgramServiceProtocol? = nil,
         deepgramRESTService: DeepgramRESTServiceProtocol? = nil,
+        audioDeviceService: AudioDeviceServiceProtocol? = nil,
         vocabularyService: VocabularyServiceProtocol? = nil
     ) {
         self.audioCaptureService = audioCaptureService ?? AudioCaptureService()
@@ -172,6 +186,7 @@ final class ServiceContainer {
         self.keychainService = keychainService ?? KeychainService()
         self.deepgramService = deepgramService ?? DeepgramService()
         self.deepgramRESTService = deepgramRESTService ?? DeepgramRESTService()
+        self.audioDeviceService = audioDeviceService ?? AudioDeviceService()
         self.vocabularyService = vocabularyService ?? VocabularyService()
         VocabularyServiceShared.instance = self.vocabularyService
     }

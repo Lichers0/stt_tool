@@ -226,3 +226,5 @@ final class AudioDeviceService: ObservableObject {
         }
     }
 }
+
+extension AudioDeviceService: AudioDeviceServiceProtocol {}
