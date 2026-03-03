@@ -138,6 +138,26 @@ final class FloatingOverlayWindow: NSPanel {
         }
     }
 
+    func showError(_ message: String) {
+        overlayViewModel.reset()
+        overlayViewModel.errorMessage = message
+        overlayViewModel.isConnecting = false
+
+        positionOnScreen(of: nil)
+        alphaValue = 0
+        orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            self.animator().alphaValue = 1
+        }
+
+        // Auto-dismiss after 2 seconds
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            self.dismissAnimated()
+        }
+    }
+
     func dismissImmediately() {
         orderOut(nil)
         alphaValue = 0
@@ -257,6 +277,7 @@ final class OverlayViewModel: ObservableObject {
     @Published var isInterimBlocked = false
     @Published var maxTextHeight: CGFloat = 250
     @Published var removingSegmentId: UUID?
+    @Published var errorMessage: String?
 
     var displayedVocabularyName: String {
         previewedVocabularyName ?? vocabularyName
@@ -377,6 +398,7 @@ final class OverlayViewModel: ObservableObject {
         isConnecting = true
         isInterimBlocked = false
         removingSegmentId = nil
+        errorMessage = nil
     }
 
     var displayText: String {
@@ -400,81 +422,97 @@ struct OverlayContentView: View {
     @State private var dotPulse = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // Header: status dot + mode indicator + vocabulary name + return symbol + timer
-            HStack(spacing: 6) {
-                // Connection status dot
-                Circle()
-                    .fill(viewModel.isConnecting ? Color.yellow : Color.green)
-                    .frame(width: 8, height: 8)
-                    .opacity(dotPulse ? (viewModel.isConnecting ? 0.3 : 1.0) : 1.0)
-                    .onChange(of: viewModel.isConnecting) { _, connecting in
-                        if connecting {
-                            withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
-                                dotPulse = true
-                            }
-                        } else {
-                            withAnimation(.easeInOut(duration: 0.15)) {
-                                dotPulse = false
-                            }
-                        }
-                    }
-                    .onAppear {
-                        if viewModel.isConnecting {
-                            withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
-                                dotPulse = true
-                            }
-                        }
-                    }
-
-                Text(viewModel.isContinueMode ? "a" : "A")
-                    .font(.system(.caption, design: .monospaced, weight: .bold))
-                    .foregroundStyle(viewModel.isContinueMode ? .orange : DS.Colors.primary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        (viewModel.isContinueMode ? Color.orange : DS.Colors.primary).opacity(0.15)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
-
-                if !viewModel.displayedVocabularyName.isEmpty {
-                    Text(viewModel.displayedVocabularyName)
-                        .font(DS.Typography.monoCaption)
-                        .foregroundStyle(.primary)
-                        .opacity(blinkOpacity)
-                        .onChange(of: viewModel.isReconnecting) { _, reconnecting in
-                            if reconnecting {
-                                withAnimation(DS.blink) { blinkOpacity = 0.3 }
+        if let error = viewModel.errorMessage {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                Text(error)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color(red: 1.0, green: 0.7, blue: 0.7))
+            }
+            .padding()
+            .frame(width: 400)
+            .background(
+                VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
+        } else {
+            VStack(alignment: .leading, spacing: 4) {
+                // Header: status dot + mode indicator + vocabulary name + return symbol + timer
+                HStack(spacing: 6) {
+                    // Connection status dot
+                    Circle()
+                        .fill(viewModel.isConnecting ? Color.yellow : Color.green)
+                        .frame(width: 8, height: 8)
+                        .opacity(dotPulse ? (viewModel.isConnecting ? 0.3 : 1.0) : 1.0)
+                        .onChange(of: viewModel.isConnecting) { _, connecting in
+                            if connecting {
+                                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                                    dotPulse = true
+                                }
                             } else {
                                 withAnimation(.easeInOut(duration: 0.15)) {
-                                    blinkOpacity = 1.0
+                                    dotPulse = false
                                 }
                             }
                         }
-                }
+                        .onAppear {
+                            if viewModel.isConnecting {
+                                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                                    dotPulse = true
+                                }
+                            }
+                        }
 
-                if viewModel.showReturnSymbol {
-                    Text("\u{23CE}")
+                    Text(viewModel.isContinueMode ? "a" : "A")
+                        .font(.system(.caption, design: .monospaced, weight: .bold))
+                        .foregroundStyle(viewModel.isContinueMode ? .orange : DS.Colors.primary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            (viewModel.isContinueMode ? Color.orange : DS.Colors.primary).opacity(0.15)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+
+                    if !viewModel.displayedVocabularyName.isEmpty {
+                        Text(viewModel.displayedVocabularyName)
+                            .font(DS.Typography.monoCaption)
+                            .foregroundStyle(.primary)
+                            .opacity(blinkOpacity)
+                            .onChange(of: viewModel.isReconnecting) { _, reconnecting in
+                                if reconnecting {
+                                    withAnimation(DS.blink) { blinkOpacity = 0.3 }
+                                } else {
+                                    withAnimation(.easeInOut(duration: 0.15)) {
+                                        blinkOpacity = 1.0
+                                    }
+                                }
+                            }
+                    }
+
+                    if viewModel.showReturnSymbol {
+                        Text("\u{23CE}")
+                            .font(DS.Typography.monoCaption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Text(formatTime(viewModel.timerSeconds))
                         .font(DS.Typography.monoCaption)
                         .foregroundStyle(.secondary)
                 }
 
-                Spacer()
-
-                Text(formatTime(viewModel.timerSeconds))
-                    .font(DS.Typography.monoCaption)
-                    .foregroundStyle(.secondary)
+                // Transcription text
+                segmentedText()
             }
-
-            // Transcription text
-            segmentedText()
+            .padding(DS.Spacing.md)
+            .frame(width: 400)
+            .background(
+                VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
         }
-        .padding(DS.Spacing.md)
-        .frame(width: 400)
-        .background(
-            VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl))
     }
 
     @ViewBuilder
