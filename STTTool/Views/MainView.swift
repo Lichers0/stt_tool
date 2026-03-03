@@ -6,12 +6,7 @@ struct MainView: View {
     var body: some View {
         VStack(spacing: DS.Spacing.lg) {
             headerView
-            statusView
-            RecordButton(
-                isRecording: viewModel.appState.isRecording,
-                isDisabled: viewModel.appState == .transcribing || viewModel.appState == .inserting,
-                action: { viewModel.toggleRecording() }
-            )
+            microphonePicker
             lastTranscriptionView
             Divider()
             footerView
@@ -69,17 +64,36 @@ struct MainView: View {
         }
     }
 
-    // MARK: - Status
+    // MARK: - Microphone Picker
 
-    private var statusView: some View {
+    private var microphonePicker: some View {
         HStack(spacing: DS.Spacing.sm) {
-            StatusIndicator(state: viewModel.appState)
-            Text(viewModel.appState.statusText)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(viewModel.appState.statusColor)
+            Image(systemName: "mic.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+
+            Picker("", selection: Binding(
+                get: { viewModel.services.audioDeviceService.selectedDeviceUID },
+                set: { viewModel.services.audioDeviceService.selectDevice(uid: $0) }
+            )) {
+                Text("System Default")
+                    .tag("system-default")
+                if !viewModel.services.audioDeviceService.availableDevices.isEmpty {
+                    Divider()
+                    ForEach(viewModel.services.audioDeviceService.availableDevices) { device in
+                        Text(device.name).tag(device.uid)
+                    }
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 2)
+        .padding(.vertical, DS.Spacing.xs)
+        .padding(.horizontal, DS.Spacing.sm)
+        .background(
+            RoundedRectangle(cornerRadius: DS.Radius.md)
+                .fill(DS.Colors.surfaceSubtle)
+        )
     }
 
     // MARK: - Last Transcription
