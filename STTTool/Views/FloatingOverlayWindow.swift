@@ -335,6 +335,9 @@ final class OverlayViewModel: ObservableObject {
             return deleteLastWord()
         }
 
+        // Preserve leading whitespace (inter-segment spacing from appendFinalText)
+        let leadingSpaces = lastSegment.text.prefix(while: { $0.isWhitespace })
+
         let words = trimmed.components(separatedBy: " ")
         guard let lastWord = words.last, !lastWord.isEmpty else { return nil }
 
@@ -343,8 +346,8 @@ final class OverlayViewModel: ObservableObject {
             finalSegments.removeLast()
             return lastWord
         } else {
-            // Remove last word, keep trailing space
-            let newText = words.dropLast().joined(separator: " ") + " "
+            // Remove last word, keep leading whitespace and trailing space
+            let newText = leadingSpaces + words.dropLast().joined(separator: " ") + " "
             finalSegments[finalSegments.count - 1] = TextSegment(text: newText, type: lastSegment.type)
             return lastWord
         }
