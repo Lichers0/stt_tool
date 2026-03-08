@@ -3,8 +3,8 @@ import SwiftUI
 struct MenuBarPopoverView: View {
     @ObservedObject var viewModel: MenuBarViewModel
     @State private var activeTab: PopoverTab = .main
-    @State private var historyVM: HistoryViewModel
-    @State private var settingsVM: SettingsViewModel
+    @StateObject private var historyVM: HistoryViewModel
+    @StateObject private var settingsVM: SettingsViewModel
 
     enum PopoverTab: String, CaseIterable {
         case main, history, settings
@@ -20,7 +20,7 @@ struct MenuBarPopoverView: View {
 
     init(viewModel: MenuBarViewModel) {
         self.viewModel = viewModel
-        self._historyVM = State(initialValue: HistoryViewModel(
+        self._historyVM = StateObject(wrappedValue: HistoryViewModel(
             historyService: viewModel.services.historyService
         ))
         let settings = SettingsViewModel(
@@ -32,7 +32,7 @@ struct MenuBarPopoverView: View {
         if let appDelegate = NSApp.delegate as? AppDelegate {
             settings.updater = appDelegate.updaterController.updater
         }
-        self._settingsVM = State(initialValue: settings)
+        self._settingsVM = StateObject(wrappedValue: settings)
     }
 
     var body: some View {

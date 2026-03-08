@@ -15,6 +15,7 @@
 		1680AE08EBCBECBE4A10D975 /* FloatingOverlayWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */; };
 		203059DFDFE527A8775D6986 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DA240E05ABAE708B17518FE /* DesignSystem.swift */; };
 		2CFA6935AB10D91C8295D29F /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDD5A1F62444BCFC4FCDDBC /* Constants.swift */; };
+		2D02162855AABE18F6B44ED1 /* AudioDeviceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 377B403F3E7E308F1403CF91 /* AudioDeviceService.swift */; };
 		2DCD00268943F1A6774DB8B9 /* Vocabulary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0394E64FA9832AEFB509927F /* Vocabulary.swift */; };
 		2E377949EA555C6A1DF89403 /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = FEF7DD52198F2F3B3FA513D1 /* Starscream */; };
 		32A8BDC328045268BD2EBEBA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EB21136745D8C317847AD27 /* AppState.swift */; };
@@ -63,6 +64,7 @@
 		2AE88FF3C71BE93F5EC0568D /* AudioDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevice.swift; sourceTree = "<group>"; };
 		2B668F7B93D4B311BA616E11 /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
 		34545F671838F54D617C6FA0 /* RecordButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordButton.swift; sourceTree = "<group>"; };
+		377B403F3E7E308F1403CF91 /* AudioDeviceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceService.swift; sourceTree = "<group>"; };
 		3E37DD900D7EA1525E213137 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		42E12BC707F3738C76C52CBE /* DeepgramRESTService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepgramRESTService.swift; sourceTree = "<group>"; };
 		446DD2EDEC8ADE7E7AB937AC /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
@@ -162,6 +164,7 @@
 			isa = PBXGroup;
 			children = (
 				CCE138D681515D8DDC3094DA /* AudioCaptureService.swift */,
+				377B403F3E7E308F1403CF91 /* AudioDeviceService.swift */,
 				42E12BC707F3738C76C52CBE /* DeepgramRESTService.swift */,
 				9A31B4D12A7D3A1B8605B47F /* DeepgramService.swift */,
 				F346D7F85E96FB7D09962F8A /* HistoryService.swift */,
@@ -313,6 +316,7 @@
 				32A8BDC328045268BD2EBEBA /* AppState.swift in Sources */,
 				4B15C8E658F1FB5D81633E69 /* AudioCaptureService.swift in Sources */,
 				B9BEF939AA3A45CA3B6ACAAD /* AudioDevice.swift in Sources */,
+				2D02162855AABE18F6B44ED1 /* AudioDeviceService.swift in Sources */,
 				2CFA6935AB10D91C8295D29F /* Constants.swift in Sources */,
 				7BAC0C56CAC71BD36E41A4A0 /* DeepgramRESTService.swift in Sources */,
 				35629D45E6FC52EED9DC1D45 /* DeepgramService.swift in Sources */,

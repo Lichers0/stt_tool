@@ -45,14 +45,17 @@ struct PermissionCard: View {
                     .font(DS.Typography.caption)
                     .foregroundStyle(.secondary)
 
-                if isWaiting && !granted {
-                    Text("Waiting for permission...")
-                        .font(DS.Typography.caption)
-                        .foregroundStyle(.orange)
-                } else if !granted, let action {
-                    Button(actionLabel, action: action)
-                        .controlSize(.small)
-                        .padding(.top, 2)
+                if !granted, let action {
+                    HStack(spacing: DS.Spacing.sm) {
+                        Button(actionLabel, action: action)
+                            .controlSize(.small)
+                        if isWaiting {
+                            Text("Waiting for permission...")
+                                .font(DS.Typography.caption)
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                    .padding(.top, 2)
                 }
             }
 

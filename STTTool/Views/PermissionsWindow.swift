@@ -157,6 +157,13 @@ struct PermissionsSetupView: View {
             .buttonStyle(.plain)
             .disabled(!permissionsService.isMicrophoneGranted || !permissionsService.isAccessibilityGranted)
             .opacity(!permissionsService.isMicrophoneGranted || !permissionsService.isAccessibilityGranted ? 0.5 : 1.0)
+
+            Button("Quit") {
+                NSApp.terminate(nil)
+            }
+            .buttonStyle(.plain)
+            .font(DS.Typography.caption)
+            .foregroundStyle(.secondary)
         }
         .padding(DS.Spacing.xxl)
     }

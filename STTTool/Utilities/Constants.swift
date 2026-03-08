@@ -44,6 +44,8 @@ enum Constants {
     static let deepgramRESTURL = "https://api.deepgram.com/v1/listen"
     static let deepgramModel = "nova-3"
     static let deepgramKeepAliveInterval: TimeInterval = 8
+    static let silenceRMSThreshold: Double = 300
+    static let silentChunksForFinalize: Int = 2  // 200ms
 
     // MARK: - Available Models
 

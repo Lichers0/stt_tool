@@ -27,13 +27,10 @@ final class PermissionsService: ObservableObject, PermissionsServiceProtocol {
     }
 
     func openAccessibilitySettings() {
-        // Prompt system to register the app, then open Accessibility settings
+        // Prompt system to register the app in the Accessibility list
+        // and show a dialog with "Open System Settings" button
         let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         AXIsProcessTrustedWithOptions(options)
-        let url = URL(
-            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-        )!
-        NSWorkspace.shared.open(url)
     }
 
     func checkPermissions() {

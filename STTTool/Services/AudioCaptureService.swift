@@ -14,6 +14,7 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
     private let bufferLock = NSLock()
     private var drainSemaphore: DispatchSemaphore?
     private var configObserver: NSObjectProtocol?
+    private var deviceChangeExpected = false
 
     private(set) var isRecording = false
     var onDeviceDisconnected: (() -> Void)?
@@ -247,8 +248,13 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
     func setInputDevice(_ deviceID: AudioDeviceID?) throws {
         guard let deviceID else { return }  // nil = use system default (no-op)
 
+        // Suppress the AVAudioEngineConfigurationChange that fires
+        // when we programmatically switch the input device.
+        deviceChangeExpected = true
+
         let inputNode = audioEngine.inputNode
         guard let audioUnit = inputNode.audioUnit else {
+            deviceChangeExpected = false
             throw AudioCaptureError.deviceError
         }
 
@@ -263,6 +269,7 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
         )
 
         guard status == noErr else {
+            deviceChangeExpected = false
             throw AudioCaptureError.deviceError
         }
     }
@@ -275,7 +282,13 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
             object: audioEngine,
             queue: .main
         ) { [weak self] _ in
-            guard let self, self.isRecording else { return }
+            guard let self else { return }
+            if self.deviceChangeExpected {
+                self.deviceChangeExpected = false
+                print("[AudioCapture] Config change after device switch — ignoring")
+                return
+            }
+            guard self.isRecording else { return }
             print("[AudioCapture] Engine configuration changed — device likely disconnected")
             self.forceStop()
             self.onDeviceDisconnected?()
