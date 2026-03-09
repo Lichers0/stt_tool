@@ -1,5 +1,5 @@
-- Fix overlay window not expanding on Cmd+V paste
-- Fix overlay window position drift on reopen after large text
-- Fix resize lag when new words appear in overlay
-- Fix lowercase toggle not applied on final text insertion
-- Allow space append on empty overlay
+- Fix non-default microphone not capturing audio (device switching broken)
+- Fix cascading recovery cycles when starting with non-default device
+- Add ObjC exception safety for audio tap installation
+- Add device disconnect recovery with debounce and retry limit
+- Fix Permissions window hidden behind Accessibility dialog
