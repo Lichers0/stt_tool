@@ -15,6 +15,7 @@ protocol AudioCaptureServiceProtocol: AnyObject, Sendable {
     func flushBuffer(to callback: (Data) -> Void)
     func replaceChunkCallback(_ callback: @escaping (Data) -> Void)
     func setInputDevice(_ deviceID: AudioDeviceID?) throws
+    func switchDevice(_ deviceID: AudioDeviceID) throws
 }
 
 protocol TranscriptionServiceProtocol: AnyObject, Sendable {

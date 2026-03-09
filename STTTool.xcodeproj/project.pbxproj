@@ -45,6 +45,7 @@
 		C6D1F19B6D7CEC514710ECE8 /* mixkit-software-interface-start-2574.wav in Resources */ = {isa = PBXBuildFile; fileRef = 6AE5A128CBEF8C46C6771A74 /* mixkit-software-interface-start-2574.wav */; };
 		C6FB2332A765B2EA58113749 /* STTToolApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73DE9C7EA7812BD44625BE8F /* STTToolApp.swift */; };
 		C9F18F787532CB590E675B96 /* SegmentedPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E3153AD76C364AA5DE66E2D /* SegmentedPicker.swift */; };
+		E4F9324DCF52EBB453E3AC5C /* ObjCExceptionCatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = 18D63CFCD7B6DC5D0826689A /* ObjCExceptionCatcher.m */; };
 		E8D02D647B859CCB599D64FA /* StatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BB0D21F8AF36FBF2565332C /* StatusBadge.swift */; };
 		F7A022AAA2B9899F98F13636 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F1198EDEB2145A4CB9EAA2 /* SettingsViewModel.swift */; };
 		F7BAC0CE803E350A2B8DE420 /* MenuBarPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9FFF61AD8DF9B3D37D928C4 /* MenuBarPopoverView.swift */; };
@@ -59,6 +60,8 @@
 		125E5228FF052711228F7A35 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		163FB1CAC633B2A772776F87 /* VocabularyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyService.swift; sourceTree = "<group>"; };
 		1796A7D79294A992DCD24EAB /* StatusIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusIndicator.swift; sourceTree = "<group>"; };
+		18D63CFCD7B6DC5D0826689A /* ObjCExceptionCatcher.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ObjCExceptionCatcher.m; sourceTree = "<group>"; };
+		1CE5FAAF11364D0887AE880C /* ObjCExceptionCatcher.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ObjCExceptionCatcher.h; sourceTree = "<group>"; };
 		1E4D897A488AC64CE45CA656 /* KeyInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyInterceptor.swift; sourceTree = "<group>"; };
 		202FC16E9591EF90E613CF0E /* FloatingOverlayWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingOverlayWindow.swift; sourceTree = "<group>"; };
 		2AE88FF3C71BE93F5EC0568D /* AudioDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevice.swift; sourceTree = "<group>"; };
@@ -85,6 +88,7 @@
 		844C0AB62F3C738C7F6BF797 /* button-dry-single-voiced-sharp.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "button-dry-single-voiced-sharp.mp3"; sourceTree = "<group>"; };
 		893C43D963FF7204D9ACBDC7 /* STTTool.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = STTTool.entitlements; sourceTree = "<group>"; };
 		9677696947EC8641FCF4526B /* TranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionService.swift; sourceTree = "<group>"; };
+		97231B0CE0E1C0B728592AF8 /* STTTool-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "STTTool-Bridging-Header.h"; sourceTree = "<group>"; };
 		9A31B4D12A7D3A1B8605B47F /* DeepgramService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepgramService.swift; sourceTree = "<group>"; };
 		AD12A141ED9C300BB169F756 /* ServiceContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceContainer.swift; sourceTree = "<group>"; };
 		B8B963C0B8CB699A7A0CAFF3 /* PermissionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionCard.swift; sourceTree = "<group>"; };
@@ -216,6 +220,7 @@
 		A52791458BE37FE9ACF8A27A /* STTTool */ = {
 			isa = PBXGroup;
 			children = (
+				97231B0CE0E1C0B728592AF8 /* STTTool-Bridging-Header.h */,
 				73DE9C7EA7812BD44625BE8F /* STTToolApp.swift */,
 				137799C9E3808B42AB054193 /* Models */,
 				5DFDDAB064950A24CFDE2280 /* Resources */,
@@ -231,6 +236,8 @@
 			isa = PBXGroup;
 			children = (
 				BFDD5A1F62444BCFC4FCDDBC /* Constants.swift */,
+				1CE5FAAF11364D0887AE880C /* ObjCExceptionCatcher.h */,
+				18D63CFCD7B6DC5D0826689A /* ObjCExceptionCatcher.m */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -332,6 +339,7 @@
 				F7BAC0CE803E350A2B8DE420 /* MenuBarPopoverView.swift in Sources */,
 				4B6BB6F07C5B0E28CCCE63B6 /* MenuBarViewModel.swift in Sources */,
 				4A05F9DE16D64CE9D0C68A09 /* ModelManager.swift in Sources */,
+				E4F9324DCF52EBB453E3AC5C /* ObjCExceptionCatcher.m in Sources */,
 				852AB989B98DE79A2994AA15 /* PermissionCard.swift in Sources */,
 				33F20E3466D983EEB0088012 /* PermissionsService.swift in Sources */,
 				05EC01A5FF6B0C5EC0A3709E /* PermissionsWindow.swift in Sources */,
@@ -431,9 +439,10 @@
 				INFOPLIST_FILE = STTTool/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.5.2;
+				MARKETING_VERSION = 1.5.3;
 				PRODUCT_BUNDLE_IDENTIFIER = app.apikey.STTTool;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "STTTool/STTTool-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 6.0;
 			};
@@ -451,9 +460,10 @@
 				INFOPLIST_FILE = STTTool/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.5.2;
+				MARKETING_VERSION = 1.5.3;
 				PRODUCT_BUNDLE_IDENTIFIER = app.apikey.STTTool;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "STTTool/STTTool-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 6.0;
 			};

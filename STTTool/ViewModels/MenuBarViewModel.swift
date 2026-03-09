@@ -23,6 +23,7 @@ final class MenuBarViewModel: ObservableObject {
 
     // MARK: - Private
 
+    private var cancellables = Set<AnyCancellable>()
     private var previousApp: NSRunningApplication?
     private var previousFocusedElement: AXUIElement?
     private var previousSelectedTextRange: AXValue?
@@ -47,6 +48,7 @@ final class MenuBarViewModel: ObservableObject {
         KeyInterceptor.shared.start()
         setupHotKey()
         setupDeviceDisconnectHandler()
+        setupDeviceServiceObservation()
     }
 
     func toggleRecording() {
@@ -177,7 +179,7 @@ final class MenuBarViewModel: ObservableObject {
 
     private func startWhisperKitRecording() {
         do {
-            try services.audioCaptureService.setInputDevice(services.audioDeviceService.effectiveDeviceID)
+            try configureInputDeviceForRecording(logContext: "WhisperKit start")
             try services.audioCaptureService.startRecording()
             appState = .recording
             services.hotKeyService.registerCancel()
@@ -273,7 +275,7 @@ final class MenuBarViewModel: ObservableObject {
 
         // Start audio capture immediately and buffer chunks while connecting
         do {
-            try services.audioCaptureService.setInputDevice(services.audioDeviceService.effectiveDeviceID)
+            try configureInputDeviceForRecording(logContext: "Deepgram streaming start")
             services.audioCaptureService.startBuffering()
             try services.audioCaptureService.startStreaming { _ in }
         } catch {
@@ -316,7 +318,7 @@ final class MenuBarViewModel: ObservableObject {
 
     private func startDeepgramREST(apiKey: String, vocabulary: [String]) {
         do {
-            try services.audioCaptureService.setInputDevice(services.audioDeviceService.effectiveDeviceID)
+            try configureInputDeviceForRecording(logContext: "Deepgram REST start")
             try services.audioCaptureService.startStreaming { _ in
                 // REST mode: ignore chunks, just record audio
             }
@@ -720,6 +722,48 @@ final class MenuBarViewModel: ObservableObject {
         }
     }
 
+    private func setupDeviceServiceObservation() {
+        guard let deviceService = services.audioDeviceService as? AudioDeviceService else { return }
+
+        // Forward device service objectWillChange to trigger Picker re-renders
+        deviceService.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+
+        // When selected device changes during recording, switch live
+        deviceService.$selectedDeviceUID
+            .dropFirst()
+            .sink { [weak self] _ in
+                Task { @MainActor in
+                    self?.applyDeviceSwitch()
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    private func applyDeviceSwitch() {
+        guard appState == .recording || appState == .streamingRecording else { return }
+
+        guard let device = services.audioDeviceService.activeDevice else {
+            print("[DeviceSwitch] No active device to switch to")
+            return
+        }
+
+        do {
+            try services.audioCaptureService.setInputDevice(services.audioDeviceService.effectiveDeviceID)
+            let selection = services.audioDeviceService.selectedDeviceUID == "system-default"
+                ? "system default"
+                : "selected device"
+            print("[DeviceSwitch] Switched to \(selection): \(device.name) (ID \(device.id))")
+        } catch {
+            print("[DeviceSwitch] Failed to switch to \(device.name): \(error) — treating as disconnect")
+            handleDeviceDisconnect()
+        }
+    }
+
     private func handleDeviceDisconnect() {
         guard appState == .recording || appState == .streamingRecording else { return }
 
@@ -762,6 +806,20 @@ final class MenuBarViewModel: ObservableObject {
     }
 
     // MARK: - Helpers
+
+    private func configureInputDeviceForRecording(logContext: String) throws {
+        let deviceService = services.audioDeviceService
+        let isSystemDefault = deviceService.selectedDeviceUID == "system-default"
+
+        if let active = deviceService.activeDevice {
+            let source = isSystemDefault ? "system default" : "selected device"
+            print("[DeviceSwitch] \(logContext): using \(source) \(active.name) (ID \(active.id))")
+        } else {
+            print("[DeviceSwitch] \(logContext): active input device unresolved")
+        }
+
+        try services.audioCaptureService.setInputDevice(deviceService.effectiveDeviceID)
+    }
 
     private func resetToIdleAfterDelay() {
         Task {

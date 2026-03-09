@@ -3,7 +3,7 @@ import CoreAudio
 import Foundation
 
 final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendable {
-    private let audioEngine = AVAudioEngine()
+    private var audioEngine: AVAudioEngine
     private var samples: [Float] = []
     private var recordingStartTime: Date?
     private let lock = NSLock()
@@ -15,15 +15,25 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
     private var drainSemaphore: DispatchSemaphore?
     private var configObserver: NSObjectProtocol?
     private var deviceChangeExpected = false
+    private var expectedDeviceChangeResetTask: Task<Void, Never>?
+    private var preferredInputDeviceID: AudioDeviceID?
+    private var isRecoveringFromConfigChange = false
+    private var hasInstalledTap = false
+    private var consecutiveRecoveryCount = 0
+    private var configChangeDebounceTask: Task<Void, Never>?
+    private static let maxConsecutiveRecoveries = 3
 
     private(set) var isRecording = false
     var onDeviceDisconnected: (() -> Void)?
 
     init() {
+        audioEngine = AVAudioEngine()
         observeConfigurationChanges()
     }
 
     deinit {
+        expectedDeviceChangeResetTask?.cancel()
+        configChangeDebounceTask?.cancel()
         if let observer = configObserver {
             NotificationCenter.default.removeObserver(observer)
         }
@@ -32,14 +42,30 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
     func startRecording() throws {
         guard !isRecording else { return }
 
+        consecutiveRecoveryCount = 0
+
         lock.lock()
         samples.removeAll()
         lock.unlock()
 
-        let inputNode = audioEngine.inputNode
-        let inputFormat = inputNode.outputFormat(forBus: 0)
+        removeTapIfInstalled()
+        rebuildAudioEngine()
 
-        // Target format: 16kHz, mono, float32 (what WhisperKit expects)
+        do {
+            try configureAudioEngineForStart()
+            try audioEngine.start()
+            print("[AudioCapture] Engine started, input format: \(audioEngine.inputNode.outputFormat(forBus: 0))")
+            try installRecordingTap()
+            isRecording = true
+            recordingStartTime = Date()
+        } catch {
+            removeTapIfInstalled()
+            audioEngine.stop()
+            throw error
+        }
+    }
+
+    private func installRecordingTap() throws {
         guard let targetFormat = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
             sampleRate: 16000,
@@ -49,15 +75,29 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
             throw AudioCaptureError.formatError
         }
 
-        guard let converter = AVAudioConverter(from: inputFormat, to: targetFormat) else {
-            throw AudioCaptureError.converterError
-        }
+        var converter: AVAudioConverter?
+        var converterFormatSignature: String?
 
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
+        removeTapIfInstalled()
+
+        let tapBlock: AVAudioNodeTapBlock = { [weak self] buffer, _ in
             guard let self else { return }
+            let sourceFormat = buffer.format
+            let formatSignature = self.converterFormatSignature(sourceFormat)
+
+            if converter == nil || converterFormatSignature != formatSignature {
+                guard let newConverter = AVAudioConverter(from: sourceFormat, to: targetFormat) else {
+                    print("[AudioCapture] WARNING: failed to create recording converter from \(sourceFormat)")
+                    return
+                }
+                converter = newConverter
+                converterFormatSignature = formatSignature
+                print("[AudioCapture] Recording source format: \(sourceFormat)")
+            }
+            guard let converter else { return }
 
             let frameCount = AVAudioFrameCount(
-                Double(buffer.frameLength) * 16000.0 / inputFormat.sampleRate
+                Double(buffer.frameLength) * targetFormat.sampleRate / sourceFormat.sampleRate
             )
             guard frameCount > 0 else { return }
 
@@ -84,10 +124,19 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
             self.lock.unlock()
         }
 
-        audioEngine.prepare()
-        try audioEngine.start()
-        isRecording = true
-        recordingStartTime = Date()
+        // Use ObjC @try/@catch to catch NSException from installTap format mismatch
+        var tapError: NSError?
+        let success = ObjCTryCatch({
+            self.audioEngine.inputNode.installTap(
+                onBus: 0, bufferSize: 4096, format: nil, block: tapBlock
+            )
+        }, &tapError)
+
+        guard success else {
+            print("[AudioCapture] installTap failed: \(tapError?.localizedDescription ?? "unknown")")
+            throw AudioCaptureError.tapInstallFailed
+        }
+        hasInstalledTap = true
     }
 
     func startStreaming(onChunk: @escaping (Data) -> Void) throws {
@@ -97,6 +146,8 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
         }
         print("[AudioCapture] startStreaming")
 
+        consecutiveRecoveryCount = 0
+
         lock.lock()
         samples.removeAll()
         lock.unlock()
@@ -104,10 +155,24 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
         chunkCallback = onChunk
         isStreamingMode = true
 
-        let inputNode = audioEngine.inputNode
-        let inputFormat = inputNode.outputFormat(forBus: 0)
+        removeTapIfInstalled()
+        rebuildAudioEngine()
 
-        // Target format: 16kHz, mono, int16 (what Deepgram expects)
+        do {
+            try configureAudioEngineForStart()
+            try audioEngine.start()
+            print("[AudioCapture] Engine started, input format: \(audioEngine.inputNode.outputFormat(forBus: 0))")
+            try installStreamingTap()
+            isRecording = true
+            recordingStartTime = Date()
+        } catch {
+            removeTapIfInstalled()
+            audioEngine.stop()
+            throw error
+        }
+    }
+
+    private func installStreamingTap() throws {
         guard let targetFormat = AVAudioFormat(
             commonFormat: .pcmFormatInt16,
             sampleRate: 16000,
@@ -117,15 +182,29 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
             throw AudioCaptureError.formatError
         }
 
-        guard let converter = AVAudioConverter(from: inputFormat, to: targetFormat) else {
-            throw AudioCaptureError.converterError
-        }
+        var converter: AVAudioConverter?
+        var converterFormatSignature: String?
 
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
+        removeTapIfInstalled()
+
+        let tapBlock: AVAudioNodeTapBlock = { [weak self] buffer, _ in
             guard let self else { return }
+            let sourceFormat = buffer.format
+            let formatSignature = self.converterFormatSignature(sourceFormat)
+
+            if converter == nil || converterFormatSignature != formatSignature {
+                guard let newConverter = AVAudioConverter(from: sourceFormat, to: targetFormat) else {
+                    print("[AudioCapture] WARNING: failed to create streaming converter from \(sourceFormat)")
+                    return
+                }
+                converter = newConverter
+                converterFormatSignature = formatSignature
+                print("[AudioCapture] Streaming source format: \(sourceFormat)")
+            }
+            guard let converter else { return }
 
             let frameCount = AVAudioFrameCount(
-                Double(buffer.frameLength) * 16000.0 / inputFormat.sampleRate
+                Double(buffer.frameLength) * targetFormat.sampleRate / sourceFormat.sampleRate
             )
             guard frameCount > 0 else { return }
 
@@ -144,7 +223,6 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
 
             let count = Int(convertedBuffer.frameLength)
 
-            // Send int16 chunk to callback for Deepgram (or buffer it)
             if let int16Data = convertedBuffer.int16ChannelData {
                 let data = Data(bytes: int16Data[0], count: count * 2)
 
@@ -161,7 +239,6 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
                     sem?.signal()
                 }
 
-                // Also accumulate float32 samples for fallback/duration tracking
                 var floats = [Float](repeating: 0, count: count)
                 for i in 0..<count {
                     floats[i] = Float(int16Data[0][i]) / 32768.0
@@ -174,10 +251,19 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
             }
         }
 
-        audioEngine.prepare()
-        try audioEngine.start()
-        isRecording = true
-        recordingStartTime = Date()
+        // Use ObjC @try/@catch to catch NSException from installTap format mismatch
+        var tapError: NSError?
+        let success = ObjCTryCatch({
+            self.audioEngine.inputNode.installTap(
+                onBus: 0, bufferSize: 4096, format: nil, block: tapBlock
+            )
+        }, &tapError)
+
+        guard success else {
+            print("[AudioCapture] installTap failed: \(tapError?.localizedDescription ?? "unknown")")
+            throw AudioCaptureError.tapInstallFailed
+        }
+        hasInstalledTap = true
     }
 
     func stopStreamingAndGetSamples() -> [Float] {
@@ -246,15 +332,45 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
     // MARK: - Device Selection
 
     func setInputDevice(_ deviceID: AudioDeviceID?) throws {
-        guard let deviceID else { return }  // nil = use system default (no-op)
+        preferredInputDeviceID = deviceID
 
-        // Suppress the AVAudioEngineConfigurationChange that fires
-        // when we programmatically switch the input device.
-        deviceChangeExpected = true
+        if isRecording {
+            try switchToPreferredInputDeviceWhileRecording()
+        } else {
+            rebuildAudioEngine()
+            printSelectedInputDevice(prefix: "[AudioCapture] Input device set")
+        }
+    }
 
+    private func applyPreferredInputDevice() throws {
+        guard let preferredInputDeviceID else { return }
+        try applyInputDeviceToAudioUnit(preferredInputDeviceID)
+    }
+
+    private func configureAudioEngineForStart() throws {
+        _ = audioEngine.inputNode
+        if preferredInputDeviceID != nil {
+            markExpectedDeviceChange()
+        }
+        try applyPreferredInputDevice()
+        try prepareAudioEngine()
+    }
+
+    private func prepareAudioEngine() throws {
+        var prepareError: NSError?
+        let success = ObjCTryCatch({
+            self.audioEngine.prepare()
+        }, &prepareError)
+
+        guard success else {
+            print("[AudioCapture] prepare failed: \(prepareError?.localizedDescription ?? "unknown")")
+            throw AudioCaptureError.enginePrepareFailed
+        }
+    }
+
+    private func applyInputDeviceToAudioUnit(_ deviceID: AudioDeviceID) throws {
         let inputNode = audioEngine.inputNode
         guard let audioUnit = inputNode.audioUnit else {
-            deviceChangeExpected = false
             throw AudioCaptureError.deviceError
         }
 
@@ -269,8 +385,103 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
         )
 
         guard status == noErr else {
-            deviceChangeExpected = false
             throw AudioCaptureError.deviceError
+        }
+
+        // Uninitialize the audio unit so the engine discards the cached format
+        // from the previous (default) device. engine.prepare() will re-initialize
+        // the unit and pick up the new device's actual hardware format.
+        AudioUnitUninitialize(audioUnit)
+    }
+
+    /// Switch to a new input device while recording. Briefly interrupts audio capture.
+    /// If not recording, sets the device for the next recording start.
+    func switchDevice(_ deviceID: AudioDeviceID) throws {
+        preferredInputDeviceID = deviceID
+
+        guard isRecording else {
+            rebuildAudioEngine()
+            printSelectedInputDevice(prefix: "[AudioCapture] Input device set")
+            return
+        }
+
+        try switchToPreferredInputDeviceWhileRecording()
+    }
+
+    private func switchToPreferredInputDeviceWhileRecording() throws {
+        markExpectedDeviceChange()
+
+        // Stop engine and remove tap
+        removeTapIfInstalled()
+        audioEngine.stop()
+        isRecording = false  // suppress config change observer
+
+        // Reinstall tap with new device's format and restart
+        do {
+            try reinstallTapAndRestart()
+            isRecording = true
+            printSelectedInputDevice(prefix: "[AudioCapture] Device switched successfully")
+        } catch {
+            resetState()
+            throw error
+        }
+    }
+
+    /// Reinstall audio tap with current input format and restart engine.
+    private func reinstallTapAndRestart() throws {
+        // If preferred device is no longer available, fall back to system default
+        if let preferred = preferredInputDeviceID, !isDeviceAvailable(preferred) {
+            print("[AudioCapture] Preferred device \(preferred) no longer available — using system default")
+            preferredInputDeviceID = nil
+        }
+
+        do {
+            try prepareStartAndInstallTap()
+        } catch where preferredInputDeviceID != nil {
+            // Tap or engine failed with preferred device — fall back to system default
+            let failedDevice = preferredInputDeviceID!
+            preferredInputDeviceID = nil
+            print("[AudioCapture] Failed with device \(failedDevice) — retrying with system default")
+            removeTapIfInstalled()
+            audioEngine.stop()
+            try prepareStartAndInstallTap()
+        }
+    }
+
+    private func prepareStartAndInstallTap() throws {
+        rebuildAudioEngine()
+        try configureAudioEngineForStart()
+        try audioEngine.start()
+        let runningInputFormat = audioEngine.inputNode.outputFormat(forBus: 0)
+        print("[AudioCapture] Engine restarted, input format: \(runningInputFormat)")
+
+        do {
+            if isStreamingMode {
+                try installStreamingTap()
+            } else {
+                try installRecordingTap()
+            }
+        } catch {
+            removeTapIfInstalled()
+            audioEngine.stop()
+            throw error
+        }
+    }
+
+    private func markExpectedDeviceChange() {
+        deviceChangeExpected = true
+        expectedDeviceChangeResetTask?.cancel()
+        expectedDeviceChangeResetTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            self?.deviceChangeExpected = false
+        }
+    }
+
+    private func printSelectedInputDevice(prefix: String) {
+        if let preferredInputDeviceID {
+            print("\(prefix) to ID \(preferredInputDeviceID)")
+        } else {
+            print("\(prefix) to system default")
         }
     }
 
@@ -283,28 +494,100 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
+            if self.isRecoveringFromConfigChange {
+                print("[AudioCapture] Config change while recovery in progress — ignoring")
+                return
+            }
             if self.deviceChangeExpected {
-                self.deviceChangeExpected = false
+                // Don't clear — let the timeout clear it. This prevents cascading
+                // recoveries when multiple config changes fire during device transition.
                 print("[AudioCapture] Config change after device switch — ignoring")
                 return
             }
             guard self.isRecording else { return }
-            print("[AudioCapture] Engine configuration changed — device likely disconnected")
-            self.forceStop()
-            self.onDeviceDisconnected?()
+
+            // Debounce: wait for transient config changes to settle
+            // (e.g. Bluetooth profile switch, multi-channel device init)
+            print("[AudioCapture] Config change detected — waiting for hardware to settle")
+            self.configChangeDebounceTask?.cancel()
+            self.configChangeDebounceTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .milliseconds(1000))
+                guard let self, !Task.isCancelled, self.isRecording else { return }
+                self.performConfigChangeRecovery()
+            }
         }
     }
 
-    private func forceStop() {
-        guard isRecording else { return }
-        audioEngine.inputNode.removeTap(onBus: 0)
+    private func performConfigChangeRecovery() {
+        configChangeDebounceTask = nil
+
+        consecutiveRecoveryCount += 1
+        if consecutiveRecoveryCount > Self.maxConsecutiveRecoveries {
+            print("[AudioCapture] Too many consecutive recoveries (\(consecutiveRecoveryCount)) — treating as device error")
+            forceStop()
+            onDeviceDisconnected?()
+            return
+        }
+
+        print("[AudioCapture] Attempting recovery (\(consecutiveRecoveryCount)/\(Self.maxConsecutiveRecoveries))")
+        isRecoveringFromConfigChange = true
+        markExpectedDeviceChange()
+        defer { isRecoveringFromConfigChange = false }
+        removeTapIfInstalled()
         audioEngine.stop()
         isRecording = false
 
+        do {
+            try reinstallTapAndRestart()
+            isRecording = true
+            print("[AudioCapture] Recovery successful — recording continues")
+        } catch {
+            print("[AudioCapture] Recovery failed: \(error) — device disconnected")
+            resetState()
+            onDeviceDisconnected?()
+        }
+    }
+
+    /// Check if a CoreAudio device still has input streams (i.e., is available for recording).
+    private func isDeviceAvailable(_ deviceID: AudioDeviceID) -> Bool {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyStreamConfiguration,
+            mScope: kAudioObjectPropertyScopeInput,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var size: UInt32 = 0
+        return AudioObjectGetPropertyDataSize(deviceID, &address, 0, nil, &size) == noErr && size > 0
+    }
+
+    private func converterFormatSignature(_ format: AVAudioFormat) -> String {
+        "\(format.commonFormat.rawValue)-\(format.sampleRate)-\(format.channelCount)-\(format.isInterleaved)"
+    }
+
+    private func rebuildAudioEngine() {
+        if let observer = configObserver {
+            NotificationCenter.default.removeObserver(observer)
+            configObserver = nil
+        }
+
+        if hasInstalledTap {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            hasInstalledTap = false
+        }
+
+        audioEngine.stop()
+        audioEngine = AVAudioEngine()
+        observeConfigurationChanges()
+    }
+
+    private func resetState() {
+        isRecording = false
+        hasInstalledTap = false
+        consecutiveRecoveryCount = 0
+        configChangeDebounceTask?.cancel()
+        configChangeDebounceTask = nil
         lock.lock()
         samples.removeAll()
         lock.unlock()
-
         chunkCallback = nil
         isStreamingMode = false
         bufferLock.lock()
@@ -314,10 +597,16 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
         bufferLock.unlock()
     }
 
+    private func forceStop() {
+        removeTapIfInstalled()
+        audioEngine.stop()
+        resetState()
+    }
+
     func stopRecording() -> [Float] {
         guard isRecording else { return [] }
 
-        audioEngine.inputNode.removeTap(onBus: 0)
+        removeTapIfInstalled()
         audioEngine.stop()
         isRecording = false
 
@@ -328,12 +617,20 @@ final class AudioCaptureService: AudioCaptureServiceProtocol, @unchecked Sendabl
 
         return result
     }
+
+    private func removeTapIfInstalled() {
+        guard hasInstalledTap else { return }
+        audioEngine.inputNode.removeTap(onBus: 0)
+        hasInstalledTap = false
+    }
 }
 
 enum AudioCaptureError: LocalizedError {
     case formatError
     case converterError
     case deviceError
+    case enginePrepareFailed
+    case tapInstallFailed
 
     var errorDescription: String? {
         switch self {
@@ -343,6 +640,10 @@ enum AudioCaptureError: LocalizedError {
             return "Failed to create audio converter"
         case .deviceError:
             return "Failed to set audio input device"
+        case .enginePrepareFailed:
+            return "Failed to prepare audio engine"
+        case .tapInstallFailed:
+            return "Failed to install audio tap (format mismatch)"
         }
     }
 }

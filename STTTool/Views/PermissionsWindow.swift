@@ -117,6 +117,8 @@ struct PermissionsSetupView: View {
                     isWaiting: permissionsService.isWaitingForAccessibility,
                     actionLabel: "Open Settings",
                     action: {
+                        // Lower window level so the system Accessibility dialog is not hidden behind us
+                        NSApp.keyWindow?.level = .normal
                         permissionsService.openAccessibilitySettings()
                         permissionsService.startAccessibilityPolling()
                     }

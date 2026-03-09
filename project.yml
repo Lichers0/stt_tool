@@ -29,7 +29,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.apikey.STTTool
-        MARKETING_VERSION: "1.5.2"
+        MARKETING_VERSION: "1.5.3"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: STTTool/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: STTTool/Resources/STTTool.entitlements
@@ -39,8 +39,13 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
         SWIFT_STRICT_CONCURRENCY: targeted
+        SWIFT_OBJC_BRIDGING_HEADER: STTTool/STTTool-Bridging-Header.h
     dependencies:
       - package: WhisperKit
       - package: HotKey
       - package: Starscream
       - package: Sparkle
+    scheme:
+      build:
+        targets:
+          STTTool: all

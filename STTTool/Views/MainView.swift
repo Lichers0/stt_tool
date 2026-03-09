@@ -76,7 +76,7 @@ struct MainView: View {
                 get: { viewModel.services.audioDeviceService.selectedDeviceUID },
                 set: { viewModel.services.audioDeviceService.selectDevice(uid: $0) }
             )) {
-                Text("System Default")
+                Text(systemDefaultPickerLabel)
                     .tag("system-default")
                 if !viewModel.services.audioDeviceService.availableDevices.isEmpty {
                     Divider()
@@ -94,6 +94,13 @@ struct MainView: View {
             RoundedRectangle(cornerRadius: DS.Radius.md)
                 .fill(DS.Colors.surfaceSubtle)
         )
+    }
+
+    private var systemDefaultPickerLabel: String {
+        guard let active = viewModel.services.audioDeviceService.activeDevice else {
+            return "System Default"
+        }
+        return "System Default (\(active.name))"
     }
 
     // MARK: - Last Transcription

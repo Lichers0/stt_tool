@@ -89,7 +89,11 @@ final class AudioDeviceService: ObservableObject {
         } else if let device = availableDevices.first(where: { $0.uid == selectedDeviceUID }) {
             activeDevice = device
         } else {
-            // Selected device not available — fallback
+            // Selected device not available — fallback to default and normalize selection
+            if selectedDeviceUID != "system-default" {
+                selectedDeviceUID = "system-default"
+                UserDefaults.standard.set("system-default", forKey: selectedDeviceKey)
+            }
             activeDevice = systemDefaultDevice()
         }
     }
